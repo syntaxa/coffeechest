@@ -1,7 +1,7 @@
 
 # Daily Telegram Coffee Lottery Bot
 
-The bot may improve your daily coffee experience if your coffee became a routine. The bot will throw a coin every working day (Mo-Fr) at the specified time. If you won then you get a message. More details in blog: https://t.me/OccupyCheetay/200
+This Telegram bot brings excitement to your daily coffee routine by simulating a lottery. Every weekday (Monday to Friday) at a scheduled time, the bot randomly determines if you've won. If you're lucky, you'll receive a congratulatory message! More details in blog: https://t.me/OccupyCheetay/200
 
 ## Features
 
@@ -9,8 +9,8 @@ The bot may improve your daily coffee experience if your coffee became a routine
 - **Unregister**: Users can unregister from the bot using the `/unregister` command.
 - **Set Timezone**: Users can set their timezone using the `/settimezone` command with an inline keyboard or manual input.
 - **Set Notification Time**: Users can set their notification time using the `/settime HH:MM` command.
-- **Daily Lottery**: The bot runs a daily lottery and notifies winners.
-- **Cron Job**: The bot checks every minute on working days to send notifications at the correct time.
+- **Daily Lottery**: The bot runs a daily lottery and notifies winners. The lottery is a random number generator that determines whether the user wins or loses.
+- **Cron Job**: The bot checks every minute on working days to send notifications at the correct time. This cron job is scheduled to run every minute on weekdays (Monday to Friday).
 
 ## Project Structure
 
@@ -75,7 +75,7 @@ utils/
 - `MONGODB_URI`: MongoDB connection string.
 - `SCHEDULED_TIME`: Default notification time (optional).
 - `TIMEZONE`: Default timezone (optional).
-- `WIN_MESSAGE`: Custom message for lottery winners (optional).
+- `WIN_MESSAGE`: Custom message displayed to lottery winners (optional).
 
 ## Dependencies
 
@@ -95,5 +95,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contributing
 
-Feel free to submit issues or pull requests to improve the bot.
-
+Feel free to submit issues or pull requests to improve the bot: https://github.com/syntaxa/coffeechest

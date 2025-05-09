@@ -1,1 +1,1 @@
-pm2 start bot.js --name test
+pm2 start bot.js --name bot

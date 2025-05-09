@@ -24,6 +24,24 @@ function getTS() {
   return new Date().toLocaleString('ru-RU', timeStampOptions);
 }
 
+
+// Helper function to check if user is registered
+async function ensureRegistered(msg) {
+  const chatId = msg.chat.id;
+  try {
+    const user = await User.findOne({ telegramId: chatId.toString() });
+    if (!user) {
+      bot.sendMessage(chatId, 'Привет! Пожалуйста используй /start, чтобы запустить бота.');
+      return null;
+    }
+    return user;
+  } catch (error) {
+    console.error(getTS() + ` Error fetching user ${chatId}:`, error);
+    bot.sendMessage(chatId, 'Произошла ошибка при проверке регистрации.');
+    return null;
+  }
+}
+
 // Registration command
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
@@ -65,8 +83,11 @@ bot.onText(/\/unregister/, async (msg) => {
 });
 
 // Timezone setting command with inline keyboard
-bot.onText(/\/settimezone/, (msg) => {
+bot.onText(/\/settimezone/, async (msg) => {
   const chatId = msg.chat.id;
+  const user = await ensureRegistered(msg);
+  if (!user) return;
+
   User.findOneAndUpdate(
     { telegramId: chatId.toString() },
     { pendingTimezone: true }
@@ -98,6 +119,9 @@ bot.onText(/\/settimezone/, (msg) => {
 // Time setting command
 bot.onText(/\/settime (\d{2}:\d{2})/, async (msg, match) => {
   const chatId = msg.chat.id;
+  const user = await ensureRegistered(msg);
+  if (!user) return;
+
   const time = match[1];
   
   if (!/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
@@ -120,6 +144,11 @@ bot.onText(/\/settime (\d{2}:\d{2})/, async (msg, match) => {
 // Handle inline keyboard callbacks
 bot.on('callback_query', async (query) => {
   const chatId = query.message.chat.id;
+  const user = await ensureRegistered(query.message);
+  if (!user) {
+    return;
+  }
+
   const data = query.data;
 
   if (data.startsWith('tz ')) {
@@ -159,12 +188,8 @@ bot.on('message', async (msg) => {
 
   if (text.startsWith('/')) return;
 
-  const user = await User.findOne({ telegramId: chatId.toString() });
-
-  if (!user) {
-    bot.sendMessage(chatId, 'Привет! Пожалуйста используй /start, чтобы запустить бота.');
-    return;
-  }
+  const user = await ensureRegistered(msg);
+  if (!user) return;
 
   if (user.pendingTimezone) {
     if (moment.tz.zone(text)) {

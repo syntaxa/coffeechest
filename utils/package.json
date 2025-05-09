@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "main": "bot.js",
     "dependencies": {
+        "@google/generative-ai": "^0.24.1",
         "dotenv": "^16.0.3",
         "mongoose": "^6.9.0",
         "node-telegram-bot-api": "^0.61.0",

@@ -1,3 +1,5 @@
+const { generateHaikuWithRetry } = require('./utils/gemini');
+const { GEMINI_PROMPT } = require('./config');
 const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
@@ -205,18 +207,14 @@ bot.on('message', async (msg) => {
     }
     return; // Stop processing if handling pending timezone
   }
-
-  
+ 
 
   // Handle commands
   if (text.startsWith('/')) {
-    console.log(getTS() + " text=" + text);
     
     const [command, ...args] = text.slice(1).split(' ');
     const lowerCaseCommand = command.toLowerCase();
     
-    console.log(getTS() + " command=" + command);
-
     switch (lowerCaseCommand) {
       case 'unregister':
         // Re-implement unregister logic
@@ -264,14 +262,29 @@ function setCronTask() {
       for (const user of users) {
         const now = moment().tz(user.timeZone);
         const [targetHour, targetMinute] = user.notificationTime.split(':');
-        
+
         if (now.hours() === parseInt(targetHour) && now.minutes() === parseInt(targetMinute)) {
           const hasWon = Math.random() < 0.5;
           console.log(getTS() + ` User ${user.username} rolled: ${hasWon}`);
-          
+
           if (hasWon) {
+            let haiku = await generateHaikuWithRetry(
+              GEMINI_PROMPT,
+              botConfig.GEMINI_TEMPERATURE,
+              botConfig.GEMINI_MAX_OUTPUT_TOKENS
+            );
+
+            let messageToSend;
+            if (haiku) {
+              messageToSend = `Поздравляю! Тебе выпало кофечко сегодня! 🎉\n\n${haiku}`;
+              console.log(getTS() + ` Sent haiku to user ${user.username} (${user.telegramId}): ${haiku}`);
+            } else {
+              messageToSend = botConfig.WIN_MESSAGE;
+              console.log(getTS() + ` Failed to generate haiku for user ${user.username} (${user.telegramId}). Sending standard message.`);
+            }
+
             try {
-              await bot.sendMessage(user.telegramId, botConfig.WIN_MESSAGE);
+              await bot.sendMessage(user.telegramId, messageToSend);
             } catch (error) {
               if ((error.response) && (error.response.statusCode === 403)) {
                 // User has blocked the bot, delete them from the database

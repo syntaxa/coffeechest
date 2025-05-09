@@ -3,11 +3,12 @@
     "version": "1.0.0",
     "main": "bot.js",
     "dependencies": {
+        "@google/generative-ai": "^0.24.1",
         "dotenv": "^16.0.3",
+        "moment-timezone": "^0.5.40",
         "mongoose": "^6.9.0",
-        "node-telegram-bot-api": "^0.61.0",
         "node-cron": "^3.0.2",
-	"moment-timezone": "^0.5.40"
+        "node-telegram-bot-api": "^0.61.0"
     },
     "scripts": {
         "start": "node bot.js"

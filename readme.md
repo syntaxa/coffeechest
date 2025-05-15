@@ -34,7 +34,10 @@ utils/
 - **`bot.js`**: Main bot logic, including commands, inline keyboard handling, and cron job setup.
 - **`config.js`**: Configuration file that loads environment variables.
 - **`models/`**: Contains Mongoose schemas for `User` and `SchemaVersion`.
-- **`utils/`**: Utility files for database connection and migrations.
+- **`utils/`**: Utility files for database connection, migrations, and Gemini API interaction.
+- **`utils/gemini.js`**: Contains functions for interacting with the Google Gemini API to generate haikus.
+- **`run.sh`**: Script to start the bot using PM2 for process management.
+- **`runtest.sh`**: Script to start the bot in a potential test mode using PM2.
 
 ## Installation
 
@@ -55,6 +58,11 @@ utils/
    MONGODB_URI=<your-mongodb-uri>
    SCHEDULED_TIME=9:50
    TIMEZONE=Europe/Moscow
+   GEMINI_API_KEY=<your-gemini-api-key>
+   GEMINI_MODEL_NAME=gemini-2.0-flash # Optional, default is 'gemini-2.0-flash'
+   GEMINI_TEMPERATURE=1.5 # Optional, default is 1.5
+   GEMINI_MAX_OUTPUT_TOKENS=300 # Optional, default is 300
+   GEMINI_PROMPT="придумай три темы для стихов. придумай один стих в стиле хайку про кофе с тонким юмором и используй придуманные ранее темы для вдохновения. ответ должен содержать только текст хайку. убери темы из результата." # Optional, default prompt
    ```
 
 4. Start the bot:
@@ -76,9 +84,19 @@ utils/
 - `SCHEDULED_TIME`: Default notification time (optional).
 - `TIMEZONE`: Default timezone (optional).
 - `WIN_MESSAGE`: Custom message displayed to lottery winners (optional).
+- `GEMINI_API_KEY`: Your Google Gemini API key.
+- `GEMINI_MODEL_NAME`: The name of the Gemini model to use (optional, defaults to `gemini-2.0-flash`).
+- `GEMINI_TEMPERATURE`: Controls the randomness of the output (optional, defaults to 1.5).
+- `GEMINI_MAX_OUTPUT_TOKENS`: The maximum number of tokens to generate (optional, defaults to 300).
+- `GEMINI_PROMPT`: The prompt used to generate haikus (optional, provides a default prompt).
+
+## Gemini API Integration
+
+This bot integrates with the Google Gemini API to generate humorous haikus about coffee, which may be included in the winning message.
 
 ## Dependencies
 
+- [@google/generative-ai](https://www.npmjs.com/package/@google/generative-ai): For interacting with the Google Gemini API.
 - [dotenv](https://www.npmjs.com/package/dotenv): For loading environment variables.
 - [mongoose](https://www.npmjs.com/package/mongoose): For MongoDB object modeling.
 - [node-telegram-bot-api](https://www.npmjs.com/package/node-telegram-bot-api): For interacting with the Telegram Bot API.

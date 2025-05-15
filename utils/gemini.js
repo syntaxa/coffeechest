@@ -1,3 +1,4 @@
+const { logInfo, logError } = require('./logger');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const botConfig = require('../config');
 
@@ -16,7 +17,7 @@ async function generateHaiku(prompt, temperature, maxOutputTokens) {
     const response = await result.response;
     return response.text();
   } catch (error) {
-    console.error('Error generating haiku:', error);
+    logError('Error generating haiku:', error);
     return null;
   }
 }
@@ -28,7 +29,7 @@ async function generateHaikuWithRetry(prompt, temperature, maxOutputTokens, retr
   }
 
   if (retries > 0) {
-    console.log('Retrying haiku generation...');
+    logInfo('Retrying haiku generation...');
     return generateHaikuWithRetry(prompt, temperature, maxOutputTokens, retries - 1);
   }
 

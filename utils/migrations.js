@@ -1,3 +1,4 @@
+const { logInfo, logError } = require('../utils/logger');
 const mongoose = require('mongoose');
 const SchemaVersion = require('../models/SchemaVersion');
 
@@ -5,7 +6,7 @@ const migrations = [
   // Migration 1: Initial schema with timezone support
   async () => {
     await mongoose.model('User').updateMany(
-      { 
+      {
         $or: [
           { timeZone: { $exists: false } },
           { notificationTime: { $exists: false } },
@@ -20,14 +21,14 @@ const migrations = [
         }
       }
     );
-    console.log('Applied migration 1: Added timezone fields');
+    logInfo('Applied migration 1: Added timezone fields');
   }
   // Add future migrations here as new array elements
 ];
 
 module.exports = async () => {
   let versionDoc = await SchemaVersion.findOne();
-  
+
   if (!versionDoc) {
     versionDoc = await SchemaVersion.create({ version: 0 });
   }
@@ -40,6 +41,6 @@ module.exports = async () => {
       { $inc: { version: 1 } },
       { new: true }
     );
-    console.log(`Database upgraded to version ${versionDoc.version}`);
+    logInfo(`Database upgraded to version ${versionDoc.version}`);
   }
 };

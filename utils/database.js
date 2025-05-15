@@ -1,3 +1,4 @@
+const { logInfo, logError } = require('./logger');
 const mongoose = require('mongoose');
 const botConfig = require('../config');
 
@@ -6,9 +7,9 @@ mongoose.set('strictQuery', false);
 const connectDB = async () => {
   try {
     await mongoose.connect(botConfig.MONGODB_URI);
-    console.log('MongoDB connected successfully');
+    logInfo('MongoDB connected successfully');
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    logError('MongoDB connection error:', error);
     process.exit(1);
   }
 };

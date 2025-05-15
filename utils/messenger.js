@@ -1,7 +1,11 @@
 require('dotenv').config();
 
 const { logInfo, logError } = require('../utils/logger');
-const bot = require('../bot'); // Assuming bot.js is in the root directory
+let telegramBotInstance;
+
+function initMessenger(botInstance) {
+  telegramBotInstance = botInstance;
+}
 const User = require('../models/User'); // Assuming models/User.js is in the models directory
 
 const ENVIRONMENT = process.env.ENVIRONMENT;
@@ -12,11 +16,15 @@ const TESTING_USER_ID = process.env.TESTING_USER_ID;
  * @param {string} telegramId - The Telegram ID of the user.
  * @param {string} message - The message content to send.
  */
-async function safeSendMessage(telegramId, message) {
+async function safeSendMessage(telegramId, message, options) {
   if (ENVIRONMENT === 'PROD') {
     // In production, send message to all users
     try {
-      await bot.sendMessage(telegramId, message);
+      if (!telegramBotInstance) {
+        logError('Messenger not initialized with bot instance.');
+        return;
+      }
+      await telegramBotInstance.sendMessage(telegramId, message, options);
       logInfo(`Message sent to user ${telegramId} in PROD environment.`);
     } catch (error) {
       logError(`Error sending message to user ${telegramId} in PROD environment:`, error.message);
@@ -25,7 +33,11 @@ async function safeSendMessage(telegramId, message) {
     // In test, only send message to the testing user
     if (telegramId === TESTING_USER_ID) {
       try {
-        await bot.sendMessage(telegramId, message);
+        if (!telegramBotInstance) {
+          logError('Messenger not initialized with bot instance.');
+          return;
+        }
+        await telegramBotInstance.sendMessage(telegramId, message, options);
         logInfo(`Message sent to testing user ${telegramId} in TEST environment.`);
       } catch (error) {
         logError(`Error sending message to testing user ${telegramId} in TEST environment:`, error.message);
@@ -38,11 +50,7 @@ async function safeSendMessage(telegramId, message) {
   }
 }
 
-/**
- * Sends a message to a specific user.
- * @param {string} telegramId - The Telegram ID of the user.
- * @param {string} message - The message content to send.
- */
+
 /**
  * Broadcasts a message to all registered users.
  * Handles users who have blocked the bot.
@@ -73,6 +81,7 @@ async function broadcastToUsers(message) {
 }
 
 module.exports = {
+  initMessenger,
   broadcastToUsers,
   safeSendMessage
 };

@@ -37,9 +37,6 @@ async function safeSendMessage(telegramId, message) {
     logError(`Unknown ENVIRONMENT: ${ENVIRONMENT}. Message not sent to ${telegramId}.`);
   }
 }
-const { logInfo, logError } = require('../utils/logger');
-const bot = require('../bot'); // Assuming bot.js is in the root directory
-const User = require('../models/User'); // Assuming models/User.js is in the models directory
 
 /**
  * Sends a message to a specific user.

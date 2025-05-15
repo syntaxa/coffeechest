@@ -1,3 +1,4 @@
+const { logInfo, logError } = require('./utils/logger');
 const { generateHaikuWithRetry } = require('./utils/gemini');
 const { GEMINI_PROMPT } = require('./config');
 const TelegramBot = require('node-telegram-bot-api');
@@ -9,22 +10,8 @@ const { connectDB } = require('./utils/database');
 //const quickTips = 'Use /settimezone to choose your timezone and /settime HH:MM to set notification time. For now you have to type the full command for time. For example "/settime 08:30". I know this sucks :).  \n\nSend /unregister if you don\'t want to receive messages anymore.';
 const quickTips = 'Используй команду /settimezone для выбора часового пояса уведомления. Набери команду /settime ЧЧ:ММ для настройки времени уведомлений. Пока что бот понимает только команду, написанную руками, например "/settime 08:30".  \n\nКоманда /unregister отключит уведомления и бот про тебя забудет.';
 
-const timeStampOptions = {
-  timeZone: 'Europe/Moscow',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false
-};
 
 const bot = new TelegramBot(botConfig.TELEGRAM_BOT_TOKEN, { polling: true });
-
-function getTS() {
-  return new Date().toLocaleString('ru-RU', timeStampOptions);
-}
 
 
 // Helper function to check if user is registered
@@ -38,7 +25,7 @@ async function ensureRegistered(msg) {
     }
     return user;
   } catch (error) {
-    console.error(getTS() + ` Error fetching user ${chatId}:`, error);
+    logError(`Error fetching user ${chatId}:`, error);
     bot.sendMessage(chatId, 'Произошла ошибка при проверке регистрации.');
     return null;
   }
@@ -47,7 +34,7 @@ async function ensureRegistered(msg) {
 // Registration command
 // Handle inline keyboard callbacks
 bot.on('callback_query', async (query) => {
-  console.log(getTS() + ' Handling callback_query. Message ID:', query.message.message_id);
+  logInfo(`Handling callback_query. Message ID: ${query.message.message_id}`);
   const chatId = query.message.chat.id;
   const user = await ensureRegistered(query.message);
   if (!user) {
@@ -74,7 +61,7 @@ bot.on('callback_query', async (query) => {
         message_id: query.message.message_id
       });
     } catch (error) {
-      console.error(getTS() + ' Timezone update error:', error);
+      logError('Timezone update error:', error);
     }
   } else if (data === 'tz_manual') {
     bot.sendMessage(chatId, 'Отправь часовой пояс в формате Region/City (например, America/New_York, https://timeapi.io/documentation/iana-timezones):');
@@ -90,7 +77,7 @@ bot.on('callback_query', async (query) => {
 async function handleStart(msg, chatId) {
   try {
     let existingUser = await User.findOne({ telegramId: chatId.toString() });
-    console.log(getTS() + " Processing /start for user: " + msg.from.username + "("  + chatId.toString() +")");
+    logInfo(`Processing /start for user: ${msg.from.username} (${chatId.toString()})`);
 
     if (existingUser) {
       bot.sendMessage(chatId, 'Ты уже зарегистрирован! 👍');
@@ -105,7 +92,7 @@ async function handleStart(msg, chatId) {
 
     bot.sendMessage(chatId, 'Привет! ' + quickTips);
   } catch (error) {
-    console.error(getTS() + ' Registration error:', error);
+    logError('Registration error:', error);
     bot.sendMessage(chatId, 'Ошибка регистрации');
   }
 }
@@ -119,7 +106,7 @@ async function handleUnregister(chatId, user) {
         bot.sendMessage(chatId, 'Ты не зарегистрирован в боте. Используй /start, чтобы начать использовать бот.');
     }
   } catch (error) {
-    console.error(getTS() + ' Unregister error:', error);
+    logError('Unregister error:', error);
     bot.sendMessage(chatId, 'Произошла ошибка при очистке регистрации.');
   }
 }
@@ -166,7 +153,7 @@ async function handleSetTime(chatId, user, args) {
     );
     bot.sendMessage(chatId, `Время уведомления установлено на ${time}.`);
   } catch (error) {
-    console.error(getTS() + ' Time update error:', error);
+    logError('Time update error:', error);
     bot.sendMessage(chatId, 'Ошибка установки времени уведомления.');
   }
 }
@@ -181,13 +168,13 @@ async function handleNonCommandMessage(chatId, user) {
 
 // Handle all incoming messages and commands
 bot.on('message', async (msg) => {
-  console.log(getTS() + ' Handling message. Message ID:', msg.message_id);
+  logInfo(`Handling message. Message ID: ${msg.message_id}`);
   const chatId = msg.chat.id;
   const text = msg.text;
 
   // Handle start command
   if (text.toLocaleLowerCase() === '/start') {
-    await handleStart(msg, chatId);  
+    await handleStart(msg, chatId);
     return;
   } // Stop processing if handling start command
 
@@ -207,30 +194,30 @@ bot.on('message', async (msg) => {
     }
     return; // Stop processing if handling pending timezone
   }
- 
+
 
   // Handle commands
   if (text.startsWith('/')) {
-    
+
     const [command, ...args] = text.slice(1).split(' ');
     const lowerCaseCommand = command.toLowerCase();
-    
+
     switch (lowerCaseCommand) {
       case 'unregister':
         // Re-implement unregister logic
-        if (!user) break;  
-        
+        if (!user) break;
+
         await handleUnregister(chatId, user);
         break;
       case 'settimezone':
         // Re-implement settimezone logic
-        if (!user) break;  
+        if (!user) break;
 
         await handleSetTimezone(chatId, user);
         break;
       case 'settime':
         // Re-implement settime logic
-        if (!user) break;  
+        if (!user) break;
 
         const time = args[0];
         if (!time || !/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
@@ -265,7 +252,7 @@ function setCronTask() {
 
         if (now.hours() === parseInt(targetHour) && now.minutes() === parseInt(targetMinute)) {
           const hasWon = Math.random() < 0.5;
-          console.log(getTS() + ` User ${user.username} rolled: ${hasWon}`);
+          logInfo(`User ${user.username} rolled: ${hasWon}`);
 
           if (hasWon) {
             let haiku = await generateHaikuWithRetry(
@@ -277,10 +264,10 @@ function setCronTask() {
             let messageToSend;
             if (haiku) {
               messageToSend = `Поздравляю! Тебе выпало кофечко сегодня! 🎉\n\n${haiku}`;
-              console.log(getTS() + ` Sent haiku to user ${user.username} (${user.telegramId}): ${haiku}`);
+              logInfo(`Sent haiku to user ${user.username} (${user.telegramId}): ${haiku}`);
             } else {
               messageToSend = botConfig.WIN_MESSAGE;
-              console.log(getTS() + ` Failed to generate haiku for user ${user.username} (${user.telegramId}). Sending standard message.`);
+              logInfo(`Failed to generate haiku for user ${user.username} (${user.telegramId}). Sending standard message.`);
             }
 
             try {
@@ -289,16 +276,16 @@ function setCronTask() {
               if ((error.response) && (error.response.statusCode === 403)) {
                 // User has blocked the bot, delete them from the database
                 await User.deleteOne({ telegramId: user.telegramId });
-                console.log(getTS() + ` User ${user.username} (${user.telegramId}) was blocked and unregistered.`);
+                logInfo(`User ${user.username} (${user.telegramId}) was blocked and unregistered.`);
               } else {
-                console.error(getTS() + ` Error sending message to ${user.telegramId}:`, error.message);
+                logError(`Error sending message to ${user.telegramId}:`, error.message);
               }
             }
           }
         }
       }
     } catch (error) {
-      console.error(getTS() + ' Cron error:', error);
+      logError('Cron error:', error);
     }
   }, {
     timezone: 'Etc/UTC'
@@ -307,18 +294,18 @@ function setCronTask() {
 
 async function main() {
   await connectDB();
-  
+
   try {
     await require('./utils/migrations')();
   } catch (error) {
-    console.error(getTS() + ' Migration failed:', error);
+    logError('Migration failed:', error);
     process.exit(1);
   }
 
   setCronTask();
-  
+
   bot.on('error', (error) => {
-    console.error(getTS() + ' Bot error:', error);
+    logError('Bot error:', error);
   });
 }
 

@@ -1,3 +1,42 @@
+require('dotenv').config();
+
+const { logInfo, logError } = require('../utils/logger');
+const bot = require('../bot'); // Assuming bot.js is in the root directory
+const User = require('../models/User'); // Assuming models/User.js is in the models directory
+
+const ENVIRONMENT = process.env.ENVIRONMENT;
+const TESTING_USER_ID = process.env.TESTING_USER_ID;
+
+/**
+ * Sends a message conditionally based on environment and testing user ID.
+ * @param {string} telegramId - The Telegram ID of the user.
+ * @param {string} message - The message content to send.
+ */
+async function safeSendMessage(telegramId, message) {
+  if (ENVIRONMENT === 'PROD') {
+    // In production, send message to all users
+    try {
+      await bot.sendMessage(telegramId, message);
+      logInfo(`Message sent to user ${telegramId} in PROD environment.`);
+    } catch (error) {
+      logError(`Error sending message to user ${telegramId} in PROD environment:`, error.message);
+    }
+  } else if (ENVIRONMENT === 'TEST') {
+    // In test, only send message to the testing user
+    if (telegramId === TESTING_USER_ID) {
+      try {
+        await bot.sendMessage(telegramId, message);
+        logInfo(`Message sent to testing user ${telegramId} in TEST environment.`);
+      } catch (error) {
+        logError(`Error sending message to testing user ${telegramId} in TEST environment:`, error.message);
+      }
+    } else {
+      logInfo(`Message suppressed for non-testing user ${telegramId} in TEST environment.`);
+    }
+  } else {
+    logError(`Unknown ENVIRONMENT: ${ENVIRONMENT}. Message not sent to ${telegramId}.`);
+  }
+}
 const { logInfo, logError } = require('../utils/logger');
 const bot = require('../bot'); // Assuming bot.js is in the root directory
 const User = require('../models/User'); // Assuming models/User.js is in the models directory
@@ -7,16 +46,6 @@ const User = require('../models/User'); // Assuming models/User.js is in the mod
  * @param {string} telegramId - The Telegram ID of the user.
  * @param {string} message - The message content to send.
  */
-async function sendToUser(telegramId, message) {
-  try {
-    await bot.sendMessage(telegramId, message);
-    logInfo(`Message sent to user ${telegramId}`);
-  } catch (error) {
-    logError(`Error sending message to user ${telegramId}:`, error.message);
-    // Optional: Add more specific error handling if needed
-  }
-}
-
 /**
  * Broadcasts a message to all registered users.
  * Handles users who have blocked the bot.
@@ -29,8 +58,7 @@ async function broadcastToUsers(message) {
 
     for (const user of users) {
       try {
-        await bot.sendMessage(user.telegramId, message);
-        logInfo(`Broadcast message sent to user ${user.telegramId}`);
+        await safeSendMessage(user.telegramId, message);
       } catch (error) {
         if ((error.response) && (error.response.statusCode === 403)) {
           // User has blocked the bot, delete them from the database
@@ -48,6 +76,6 @@ async function broadcastToUsers(message) {
 }
 
 module.exports = {
-  sendToUser,
-  broadcastToUsers
+  broadcastToUsers,
+  safeSendMessage
 };

@@ -7,12 +7,15 @@ const moment = require('moment-timezone');
 const botConfig = require('./config');
 const User = require('./models/User');
 const { connectDB } = require('./utils/database');
-const { safeSendMessage } = require('./utils/messenger'); // Import safeSendMessage
+const { safeSendMessage, initMessenger } = require('./utils/messenger'); // Import safeSendMessage and initMessenger
 //const quickTips = 'Use /settimezone to choose your timezone and /settime HH:MM to set notification time. For now you have to type the full command for time. For example "/settime 08:30". I know this sucks :).  \n\nSend /unregister if you don\'t want to receive messages anymore.';
 const quickTips = 'Используй команду /settimezone для выбора часового пояса уведомления. Набери команду /settime ЧЧ:ММ для настройки времени уведомлений. Пока что бот понимает только команду, написанную руками, например "/settime 08:30".  \n\nКоманда /unregister отключит уведомления и бот про тебя забудет.';
 
 
 const bot = new TelegramBot(botConfig.TELEGRAM_BOT_TOKEN, { polling: true });
+
+// Initialize the messenger with the bot instance
+initMessenger(bot);
 
 
 // Helper function to check if user is registered
@@ -173,71 +176,75 @@ bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  // Handle start command
-  if (text.toLocaleLowerCase() === '/start') {
-    await handleStart(msg, chatId);
-    return;
-  } // Stop processing if handling start command
+  // avoiding system messages like 'user xyz was added' etc
+  if(text) {
 
-  // All other commnads require user to be regisgtered with bot
-  const user = await ensureRegistered(msg);
+    // Handle start command
+    if (text.toLocaleLowerCase() === '/start') {
+      await handleStart(msg, chatId);
+      return;
+    } // Stop processing if handling start command
 
-  // Handle manual timezone input if pending
-  if (user && user.pendingTimezone) {
-    if (moment.tz.zone(text)) {
-      await User.findOneAndUpdate(
-        { telegramId: chatId.toString() },
-        { timeZone: text, pendingTimezone: false }
-      );
-      safeSendMessage(chatId, `Установлен часовой пояс ${text}.`);
+    // All other commnads require user to be regisgtered with bot
+    const user = await ensureRegistered(msg);
+
+    // Handle manual timezone input if pending
+    if (user && user.pendingTimezone) {
+      if (moment.tz.zone(text)) {
+        await User.findOneAndUpdate(
+          { telegramId: chatId.toString() },
+          { timeZone: text, pendingTimezone: false }
+        );
+        safeSendMessage(chatId, `Установлен часовой пояс ${text}.`);
+      } else {
+        safeSendMessage(chatId, 'Неизвестный часовой пояс. Пожалуйста попробуй ещё раз или используй /settimezone для выбора часового пояса из списка.');
+      }
+      return; // Stop processing if handling pending timezone
+    }
+
+
+    // Handle commands
+    if (text.startsWith('/')) {
+
+      const [command, ...args] = text.slice(1).split(' ');
+      const lowerCaseCommand = command.toLowerCase();
+
+      switch (lowerCaseCommand) {
+        case 'unregister':
+          // Re-implement unregister logic
+          if (!user) break;
+
+          await handleUnregister(chatId, user);
+          break;
+        case 'settimezone':
+          // Re-implement settimezone logic
+          if (!user) break;
+
+          await handleSetTimezone(chatId, user);
+          break;
+        case 'settime':
+          // Re-implement settime logic
+          if (!user) break;
+
+          const time = args[0];
+          if (!time || !/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+            safeSendMessage(chatId, 'Неверный формат. Используй ЧЧ:ММ, например 09:00');
+            return;
+          }
+
+          await handleSetTime(chatId, user, args);
+          break;
+        default:
+          // Unknown command
+          if (!user) return;
+          await handleUnknownCommand(chatId, user);
+          break;
+      }
     } else {
-      safeSendMessage(chatId, 'Неизвестный часовой пояс. Пожалуйста попробуй ещё раз или используй /settimezone для выбора часового пояса из списка.');
+      // Handle non-command messages
+      if (!user) return;
+      await handleNonCommandMessage(chatId, user);
     }
-    return; // Stop processing if handling pending timezone
-  }
-
-
-  // Handle commands
-  if (text.startsWith('/')) {
-
-    const [command, ...args] = text.slice(1).split(' ');
-    const lowerCaseCommand = command.toLowerCase();
-
-    switch (lowerCaseCommand) {
-      case 'unregister':
-        // Re-implement unregister logic
-        if (!user) break;
-
-        await handleUnregister(chatId, user);
-        break;
-      case 'settimezone':
-        // Re-implement settimezone logic
-        if (!user) break;
-
-        await handleSetTimezone(chatId, user);
-        break;
-      case 'settime':
-        // Re-implement settime logic
-        if (!user) break;
-
-        const time = args[0];
-        if (!time || !/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-          safeSendMessage(chatId, 'Неверный формат. Используй ЧЧ:ММ, например 09:00');
-          return;
-        }
-
-        await handleSetTime(chatId, user, args);
-        break;
-      default:
-        // Unknown command
-        if (!user) return;
-        await handleUnknownCommand(chatId, user);
-        break;
-    }
-  } else {
-    // Handle non-command messages
-    if (!user) return;
-    await handleNonCommandMessage(chatId, user);
   }
 });
 
@@ -311,3 +318,5 @@ async function main() {
 }
 
 main();
+
+module.exports = bot;

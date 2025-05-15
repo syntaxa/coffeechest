@@ -7,6 +7,7 @@ const moment = require('moment-timezone');
 const botConfig = require('./config');
 const User = require('./models/User');
 const { connectDB } = require('./utils/database');
+const { safeSendMessage } = require('./utils/messenger'); // Import safeSendMessage
 //const quickTips = 'Use /settimezone to choose your timezone and /settime HH:MM to set notification time. For now you have to type the full command for time. For example "/settime 08:30". I know this sucks :).  \n\nSend /unregister if you don\'t want to receive messages anymore.';
 const quickTips = 'Используй команду /settimezone для выбора часового пояса уведомления. Набери команду /settime ЧЧ:ММ для настройки времени уведомлений. Пока что бот понимает только команду, написанную руками, например "/settime 08:30".  \n\nКоманда /unregister отключит уведомления и бот про тебя забудет.';
 
@@ -20,13 +21,13 @@ async function ensureRegistered(msg) {
   try {
     const user = await User.findOne({ telegramId: chatId.toString() });
     if (!user) {
-      bot.sendMessage(chatId, 'Пожалуйста используй /start, чтобы запустить бота.');
+      safeSendMessage(chatId, 'Пожалуйста используй /start, чтобы запустить бота.');
       return null;
     }
     return user;
   } catch (error) {
     logError(`Error fetching user ${chatId}:`, error);
-    bot.sendMessage(chatId, 'Произошла ошибка при проверке регистрации.');
+    safeSendMessage(chatId, 'Произошла ошибка при проверке регистрации.');
     return null;
   }
 }
@@ -55,7 +56,7 @@ bot.on('callback_query', async (query) => {
         { telegramId: chatId.toString() },
         { timeZone: tz, pendingTimezone: false }
       );
-      bot.sendMessage(chatId, `Установлен часовой пояс ${tz}.`);
+      safeSendMessage(chatId, `Установлен часовой пояс ${tz}.`);
       bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
         chat_id: chatId,
         message_id: query.message.message_id
@@ -64,7 +65,7 @@ bot.on('callback_query', async (query) => {
       logError('Timezone update error:', error);
     }
   } else if (data === 'tz_manual') {
-    bot.sendMessage(chatId, 'Отправь часовой пояс в формате Region/City (например, America/New_York, https://timeapi.io/documentation/iana-timezones):');
+    safeSendMessage(chatId, 'Отправь часовой пояс в формате Region/City (например, America/New_York, https://timeapi.io/documentation/iana-timezones):');
     bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
       chat_id: chatId,
       message_id: query.message.message_id
@@ -80,7 +81,7 @@ async function handleStart(msg, chatId) {
     logInfo(`Processing /start for user: ${msg.from.username} (${chatId.toString()})`);
 
     if (existingUser) {
-      bot.sendMessage(chatId, 'Ты уже зарегистрирован! 👍');
+      safeSendMessage(chatId, 'Ты уже зарегистрирован! 👍');
       return;
     }
 
@@ -90,10 +91,10 @@ async function handleStart(msg, chatId) {
     });
     await existingUser.save();
 
-    bot.sendMessage(chatId, 'Привет! ' + quickTips);
+    safeSendMessage(chatId, 'Привет! ' + quickTips);
   } catch (error) {
     logError('Registration error:', error);
-    bot.sendMessage(chatId, 'Ошибка регистрации');
+    safeSendMessage(chatId, 'Ошибка регистрации');
   }
 }
 
@@ -101,13 +102,13 @@ async function handleUnregister(chatId, user) {
   try {
     const result = await User.deleteOne({ telegramId: chatId.toString() });
     if (result.deletedCount > 0) {
-        bot.sendMessage(chatId, 'Бот забыл про тебя. Пока! 👋');
+        safeSendMessage(chatId, 'Бот забыл про тебя. Пока! 👋');
     } else {
-        bot.sendMessage(chatId, 'Ты не зарегистрирован в боте. Используй /start, чтобы начать использовать бот.');
+        safeSendMessage(chatId, 'Ты не зарегистрирован в боте. Используй /start, чтобы начать использовать бот.');
     }
   } catch (error) {
     logError('Unregister error:', error);
-    bot.sendMessage(chatId, 'Произошла ошибка при очистке регистрации.');
+    safeSendMessage(chatId, 'Произошла ошибка при очистке регистрации.');
   }
 }
 
@@ -135,14 +136,14 @@ async function handleSetTimezone(chatId, user) {
         ]
       }
     };
-    bot.sendMessage(chatId, 'Выбери часовой пояс:', keyboard);
+    safeSendMessage(chatId, 'Выбери часовой пояс:', keyboard);
   });
 }
 
 async function handleSetTime(chatId, user, args) {
   const time = args[0];
   if (!time || !/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-    bot.sendMessage(chatId, 'Неверный формат. Используй ЧЧ:ММ, например 09:00');
+    safeSendMessage(chatId, 'Неверный формат. Используй ЧЧ:ММ, например 09:00');
     return;
   }
 
@@ -151,19 +152,19 @@ async function handleSetTime(chatId, user, args) {
       { telegramId: chatId.toString() },
       { notificationTime: time }
     );
-    bot.sendMessage(chatId, `Время уведомления установлено на ${time}.`);
+    safeSendMessage(chatId, `Время уведомления установлено на ${time}.`);
   } catch (error) {
     logError('Time update error:', error);
-    bot.sendMessage(chatId, 'Ошибка установки времени уведомления.');
+    safeSendMessage(chatId, 'Ошибка установки времени уведомления.');
   }
 }
 
 async function handleUnknownCommand(chatId, user) {
-  bot.sendMessage(chatId, 'Неизвестная команда.\n\n' + quickTips);
+  safeSendMessage(chatId, 'Неизвестная команда.\n\n' + quickTips);
 }
 
 async function handleNonCommandMessage(chatId, user) {
-  bot.sendMessage(chatId, 'Я не понимаю.\n\n' + quickTips);
+  safeSendMessage(chatId, 'Я не понимаю.\n\n' + quickTips);
 }
 
 // Handle all incoming messages and commands
@@ -188,9 +189,9 @@ bot.on('message', async (msg) => {
         { telegramId: chatId.toString() },
         { timeZone: text, pendingTimezone: false }
       );
-      bot.sendMessage(chatId, `Установлен часовой пояс ${text}.`);
+      safeSendMessage(chatId, `Установлен часовой пояс ${text}.`);
     } else {
-      bot.sendMessage(chatId, 'Неизвестный часовой пояс. Пожалуйста попробуй ещё раз или используй /settimezone для выбора часового пояса из списка.');
+      safeSendMessage(chatId, 'Неизвестный часовой пояс. Пожалуйста попробуй ещё раз или используй /settimezone для выбора часового пояса из списка.');
     }
     return; // Stop processing if handling pending timezone
   }
@@ -221,7 +222,7 @@ bot.on('message', async (msg) => {
 
         const time = args[0];
         if (!time || !/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-          bot.sendMessage(chatId, 'Неверный формат. Используй ЧЧ:ММ, например 09:00');
+          safeSendMessage(chatId, 'Неверный формат. Используй ЧЧ:ММ, например 09:00');
           return;
         }
 
@@ -271,7 +272,7 @@ function setCronTask() {
             }
 
             try {
-              await bot.sendMessage(user.telegramId, messageToSend);
+              await safeSendMessage(user.telegramId, messageToSend);
             } catch (error) {
               if ((error.response) && (error.response.statusCode === 403)) {
                 // User has blocked the bot, delete them from the database

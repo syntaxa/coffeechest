@@ -80,6 +80,18 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
 - `GEMINI_TEMPERATURE`: Controls the randomness of the output (optional, defaults to 1.5).
 - `GEMINI_MAX_OUTPUT_TOKENS`: The maximum number of tokens to generate (optional, defaults to 300).
 - `GEMINI_PROMPT`: The prompt used to generate haikus (optional, provides a default prompt).
+- `ENVIRONMENT`: Set to 'PROD' for production or 'TEST' for testing mode.
+- `TESTING_USER_ID`: Telegram ID of the user who will receive messages in test mode.
+
+### Test Mode
+
+When `ENVIRONMENT` is set to 'TEST', the bot operates in a special test mode that:
+- Only sends messages to the user specified in `TESTING_USER_ID`
+- Suppresses all messages to other users
+- Logs information about message suppression
+- Provides detailed error logging for testing purposes
+
+This mode is useful for testing new features or changes without affecting all users. In test mode, the bot will only interact with the designated testing user, making it safe to experiment with new functionality.
 
 ## Gemini API Integration
 

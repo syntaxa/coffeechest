@@ -1,4 +1,3 @@
-
 # Daily Telegram Coffee Lottery Bot
 
 This Telegram bot brings excitement to your daily coffee routine by simulating a lottery. Every weekday (Monday to Friday) at a scheduled time, the bot randomly determines if you've won. If you're lucky, you'll receive a congratulatory message! More details in blog: https://t.me/OccupyCheetay/200
@@ -12,22 +11,6 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
 - **Daily Lottery**: The bot runs a daily lottery and notifies winners. The lottery is a random number generator that determines whether the user wins or loses.
 - **Cron Job**: The bot checks every minute on working days to send notifications at the correct time. This cron job is scheduled to run every minute on weekdays (Monday to Friday).
 
-## Project Structure
-
-```
-.env
-.gitignore
-bot.js
-config.js
-package.json
-models/
-    SchemaVersion.js
-    User.js
-utils/
-    database.js
-    migrations.js
-    package.json
-```
 
 ### Key Files
 
@@ -54,15 +37,23 @@ utils/
 
 3. Create a `.env` file in the root directory with the following variables:
    ```env
+   # Required variables
    TELEGRAM_BOT_TOKEN=<your-telegram-bot-token>
    MONGODB_URI=<your-mongodb-uri>
-   SCHEDULED_TIME=9:50
-   TIMEZONE=Europe/Moscow
    GEMINI_API_KEY=<your-gemini-api-key>
-   GEMINI_MODEL_NAME=gemini-2.0-flash # Optional, default is 'gemini-2.0-flash'
-   GEMINI_TEMPERATURE=1.5 # Optional, default is 1.5
-   GEMINI_MAX_OUTPUT_TOKENS=300 # Optional, default is 300
-   GEMINI_PROMPT="придумай три темы для стихов. придумай один стих в стиле хайку про кофе с тонким юмором и используй придуманные ранее темы для вдохновения. ответ должен содержать только текст хайку. убери темы из результата." # Optional, default prompt
+
+   # Environment configuration
+   ENVIRONMENT=PROD  # Set to 'PROD' for production or 'TEST' for testing
+
+   # Default settings
+   SCHEDULED_TIME=9:50  # Default notification time
+   TIMEZONE=Europe/Moscow  # Default timezone
+
+   # Gemini API configuration (all optional)
+   GEMINI_MODEL_NAME=gemini-2.0-flash  # Default is 'gemini-2.0-flash'
+   GEMINI_TEMPERATURE=1.5  # Default is 1.5
+   GEMINI_MAX_OUTPUT_TOKENS=300  # Default is 300
+   GEMINI_PROMPT="придумай три темы для стихов. придумай один стих в стиле хайку про кофе с тонким юмором и используй придуманные ранее темы для вдохновения. ответ должен содержать только текст хайку. убери темы из результата."  # Default prompt
    ```
 
 4. Start the bot:

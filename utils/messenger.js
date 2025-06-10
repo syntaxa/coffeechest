@@ -17,7 +17,7 @@ const TESTING_CHAT_ID = process.env.TESTING_CHAT_ID; // Chat ID for testing user
  * @returns {boolean} - True if the user is an admin, false otherwise
  */
 function isAdmin(telegramId) {
-  return telegramId === process.env.ADMIN_CHAT_ID;
+  return telegramId == process.env.ADMIN_CHAT_ID;
 }
 
 /**
@@ -40,7 +40,7 @@ async function safeSendMessage(telegramId, message, options) {
     }
   } else if (ENVIRONMENT === 'TEST') {
     // In test, only send message to the testing user
-    if (telegramId === TESTING_CHAT_ID) {
+    if (telegramId == TESTING_CHAT_ID) {
       try {
         if (!telegramBotInstance) {
           logError('Messenger not initialized with bot instance.');

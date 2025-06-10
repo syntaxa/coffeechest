@@ -11,7 +11,8 @@ const botConfig = {
     GEMINI_MODEL_NAME: process.env.GEMINI_MODEL_NAME || 'gemini-2.0-flash',
     GEMINI_TEMPERATURE: parseFloat(process.env.GEMINI_TEMPERATURE) || 1.5,
     GEMINI_MAX_OUTPUT_TOKENS: parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS) || 300,
-    GEMINI_PROMPT: "придумай три темы для стихов. придумай один стих в стиле хайку про кофе с тонким юмором и используй придуманные ранее темы для вдохновения. ответ должен содержать только текст хайку. убери темы из результата."
+    GEMINI_PROMPT: "придумай три темы для стихов. придумай один стих в стиле хайку про кофе с тонким юмором и используй придуманные ранее темы для вдохновения. ответ должен содержать только текст хайку. убери темы из результата.",
+    ADMIN_USER_ID: process.env.ADMIN_USER_ID
 };
 
 module.exports = botConfig;

@@ -10,6 +10,7 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
 - **Set Notification Time**: Users can set their notification time using the `/settime HH:MM` command.
 - **Daily Lottery**: The bot runs a daily lottery and notifies winners. The lottery is a random number generator that determines whether the user wins or loses.
 - **Cron Job**: The bot checks every minute on working days to send notifications at the correct time. This cron job is scheduled to run every minute on weekdays (Monday to Friday).
+- **Admin Broadcast**: Administrators can broadcast messages to all users using the `/broadcast` command followed by the message text.
 
 
 ### Key Files
@@ -41,6 +42,7 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
    TELEGRAM_BOT_TOKEN=<your-telegram-bot-token>
    MONGODB_URI=<your-mongodb-uri>
    GEMINI_API_KEY=<your-gemini-api-key>
+   ADMIN_USER_ID=<your-telegram-user-id>  # Your Telegram user ID for admin privileges
 
    # Environment configuration
    ENVIRONMENT=PROD  # Set to 'PROD' for production or 'TEST' for testing
@@ -67,6 +69,7 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
 - **`/unregister`**: Unregister from the bot.
 - **`/settimezone`**: Set your timezone using an inline keyboard or manual input.
 - **`/settime HH:MM`**: Set your notification time in `HH:MM` format.
+- **`/broadcast <message>`**: (Admin only) Broadcast a message to all registered users.
 
 ## Environment Variables in `config.js`
 
@@ -82,6 +85,7 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
 - `GEMINI_PROMPT`: The prompt used to generate haikus (optional, provides a default prompt).
 - `ENVIRONMENT`: Set to 'PROD' for production or 'TEST' for testing mode.
 - `TESTING_USER_ID`: Telegram ID of the user who will receive messages in test mode.
+- `ADMIN_USER_ID`: Your Telegram user ID for admin privileges.
 
 ### Test Mode
 

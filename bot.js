@@ -7,7 +7,7 @@ const moment = require('moment-timezone');
 const botConfig = require('./config');
 const User = require('./models/User');
 const { connectDB } = require('./utils/database');
-const { safeSendMessage, initMessenger } = require('./utils/messenger'); // Import safeSendMessage and initMessenger
+const { safeSendMessage, initMessenger, broadcastToUsers, isAdmin } = require('./utils/messenger'); // Import broadcastToUsers and isAdmin
 //const quickTips = 'Use /settimezone to choose your timezone and /settime HH:MM to set notification time. For now you have to type the full command for time. For example "/settime 08:30". I know this sucks :).  \n\nSend /unregister if you don\'t want to receive messages anymore.';
 const quickTips = 'Используй команду /settimezone для выбора часового пояса уведомления. Набери команду /settime ЧЧ:ММ для настройки времени уведомлений. Пока что бот понимает только команду, написанную руками, например "/settime 08:30".  \n\nКоманда /unregister отключит уведомления и бот про тебя забудет.';
 
@@ -162,6 +162,27 @@ async function handleSetTime(chatId, user, args) {
   }
 }
 
+async function handleBroadcast(chatId, user, args) {
+  if (!isAdmin(chatId.toString())) {
+    safeSendMessage(chatId, 'Эта команда доступна только администраторам.');
+    return;
+  }
+
+  const message = args.join(' ');
+  if (!message.trim()) {
+    safeSendMessage(chatId, 'Сообщение не может быть пустым.');
+    return;
+  }
+
+  try {
+    await broadcastToUsers(message);
+    safeSendMessage(chatId, 'Сообщение успешно отправлено всем пользователям.');
+  } catch (error) {
+    logError('Broadcast error:', error);
+    safeSendMessage(chatId, 'Произошла ошибка при отправке сообщения.');
+  }
+}
+
 async function handleUnknownCommand(chatId, user) {
   safeSendMessage(chatId, 'Неизвестная команда.\n\n' + quickTips);
 }
@@ -233,6 +254,10 @@ bot.on('message', async (msg) => {
           }
 
           await handleSetTime(chatId, user, args);
+          break;
+        case 'broadcast':
+          if (!user) break;
+          await handleBroadcast(chatId, user, args);
           break;
         default:
           // Unknown command

@@ -12,6 +12,15 @@ const ENVIRONMENT = process.env.ENVIRONMENT;
 const TESTING_USER_ID = process.env.TESTING_USER_ID;
 
 /**
+ * Checks if a user is an administrator
+ * @param {string} telegramId - The Telegram ID of the user to check
+ * @returns {boolean} - True if the user is an admin, false otherwise
+ */
+function isAdmin(telegramId) {
+  return telegramId === process.env.ADMIN_USER_ID;
+}
+
+/**
  * Sends a message conditionally based on environment and testing user ID.
  * @param {string} telegramId - The Telegram ID of the user.
  * @param {string} message - The message content to send.
@@ -83,5 +92,6 @@ async function broadcastToUsers(message) {
 module.exports = {
   initMessenger,
   broadcastToUsers,
-  safeSendMessage
+  safeSendMessage,
+  isAdmin
 };

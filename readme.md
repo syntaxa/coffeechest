@@ -42,7 +42,7 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
    TELEGRAM_BOT_TOKEN=<your-telegram-bot-token>
    MONGODB_URI=<your-mongodb-uri>
    GEMINI_API_KEY=<your-gemini-api-key>
-   ADMIN_USER_ID=<your-telegram-user-id>  # Your Telegram user ID for admin privileges
+   ADMIN_CHAT_ID=<your-telegram-chat-id>  # Your Telegram chat ID with the bot for admin privileges
 
    # Environment configuration
    ENVIRONMENT=PROD  # Set to 'PROD' for production or 'TEST' for testing
@@ -84,13 +84,13 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
 - `GEMINI_MAX_OUTPUT_TOKENS`: The maximum number of tokens to generate (optional, defaults to 300).
 - `GEMINI_PROMPT`: The prompt used to generate haikus (optional, provides a default prompt).
 - `ENVIRONMENT`: Set to 'PROD' for production or 'TEST' for testing mode.
-- `TESTING_USER_ID`: Telegram ID of the user who will receive messages in test mode.
-- `ADMIN_USER_ID`: Your Telegram user ID for admin privileges.
+- `TESTING_CHAT_ID`: Telegram chat ID of the user who will receive messages in test mode.
+- `ADMIN_CHAT_ID`: Your Telegram chat ID with the bot for admin privileges.
 
 ### Test Mode
 
 When `ENVIRONMENT` is set to 'TEST', the bot operates in a special test mode that:
-- Only sends messages to the user specified in `TESTING_USER_ID`
+- Only sends messages to the user specified in `TESTING_CHAT_ID`
 - Suppresses all messages to other users
 - Logs information about message suppression
 - Provides detailed error logging for testing purposes

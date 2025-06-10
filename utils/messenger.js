@@ -9,15 +9,15 @@ function initMessenger(botInstance) {
 const User = require('../models/User'); // Assuming models/User.js is in the models directory
 
 const ENVIRONMENT = process.env.ENVIRONMENT;
-const TESTING_USER_ID = process.env.TESTING_USER_ID;
+const TESTING_CHAT_ID = process.env.TESTING_CHAT_ID; // Chat ID for testing user in test environment
 
 /**
  * Checks if a user is an administrator
- * @param {string} telegramId - The Telegram ID of the user to check
+ * @param {string} telegramId - The Telegram chat ID of the user to check
  * @returns {boolean} - True if the user is an admin, false otherwise
  */
 function isAdmin(telegramId) {
-  return telegramId === process.env.ADMIN_USER_ID;
+  return telegramId === process.env.ADMIN_CHAT_ID;
 }
 
 /**
@@ -40,7 +40,7 @@ async function safeSendMessage(telegramId, message, options) {
     }
   } else if (ENVIRONMENT === 'TEST') {
     // In test, only send message to the testing user
-    if (telegramId === TESTING_USER_ID) {
+    if (telegramId === TESTING_CHAT_ID) {
       try {
         if (!telegramBotInstance) {
           logError('Messenger not initialized with bot instance.');

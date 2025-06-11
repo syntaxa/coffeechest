@@ -113,13 +113,13 @@ bot.on('callback_query', async (query) => {
     await updateDessertSettings(chatId, {
       ...user.dessertSettings,
       enabled: newState
-    });
+    }, query.message.message_id);
   } else if (data.startsWith('prob_')) {
     const probability = parseInt(data.split('_')[1]);
     await updateDessertSettings(chatId, {
       ...user.dessertSettings,
       probability
-    });
+    }, query.message.message_id);
   } else if (data === 'close_dessert') {
     try {
       bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
@@ -371,7 +371,7 @@ async function handleSetCookie(chatId, user) {
   safeSendMessage(chatId, '🍪 Настройка десерта к кофе', keyboard);
 }
 
-async function updateDessertSettings(chatId, update) {
+async function updateDessertSettings(chatId, update, messageId) {
   try {
     await User.findOneAndUpdate(
       { telegramId: chatId.toString() },
@@ -381,7 +381,30 @@ async function updateDessertSettings(chatId, update) {
     if (!updatedUser) {
       throw new Error('User not found after update');
     }
-    await handleSetCookie(chatId, updatedUser);
+
+    const keyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: `Десерт сейчас: ${updatedUser.dessertSettings?.enabled ? '✅' : '❌'}`, callback_data: 'toggle_dessert' }
+          ],
+          [
+            { text: `${updatedUser.dessertSettings?.probability === 20 ? '✅ ' : ''}Шанс 20%`, callback_data: 'prob_20' },
+            { text: `${updatedUser.dessertSettings?.probability === 40 ? '✅ ' : ''}Шанс 40%`, callback_data: 'prob_40' },
+            { text: `${updatedUser.dessertSettings?.probability === 60 ? '✅ ' : ''}Шанс 60%`, callback_data: 'prob_60' },
+            { text: `${updatedUser.dessertSettings?.probability === 80 ? '✅ ' : ''}Шанс 80%`, callback_data: 'prob_80' }
+          ],
+          [
+            { text: 'Закрыть', callback_data: 'close_dessert' }
+          ]
+        ]
+      }
+    };
+
+    await bot.editMessageReplyMarkup(keyboard.reply_markup, {
+      chat_id: chatId,
+      message_id: messageId
+    });
   } catch (error) {
     logError('Dessert settings update error:', error);
     safeSendMessage(chatId, 'Произошла ошибка при настройке десерта.');

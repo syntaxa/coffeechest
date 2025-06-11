@@ -58,25 +58,21 @@ bot.on('callback_query', async (query) => {
         { telegramId: chatId.toString() },
         { timeZone: tz, pendingTimezone: false }
       );
+      // Delete the timezone selection message
+      await bot.deleteMessage(chatId, query.message.message_id);
       safeSendMessage(chatId, `Установлен часовой пояс ${tz}.`);
-      bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
-        chat_id: chatId,
-        message_id: query.message.message_id
-      });
     } catch (error) {
       logError('Timezone update error:', error);
       safeSendMessage(chatId, 'Произошла ошибка при обновлении часового пояса.');
     }
   } else if (data === 'tz_manual') {
+    // Delete the timezone selection message
+    await bot.deleteMessage(chatId, query.message.message_id);
     safeSendMessage(chatId, 'Отправь часовой пояс в формате Region/City (например, America/New_York, https://timeapi.io/documentation/iana-timezones):');
-    bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
-      chat_id: chatId,
-      message_id: query.message.message_id
-    });
   } else if (data.startsWith('time_hour_')) {
     try {
       const hour = parseInt(data.split('_')[2]);
-      await handleHourSelection(chatId, hour);
+      await handleHourSelection(chatId, hour, query.message.message_id);
       bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
         chat_id: chatId,
         message_id: query.message.message_id
@@ -88,7 +84,7 @@ bot.on('callback_query', async (query) => {
   } else if (data.startsWith('time_minute_')) {
     try {
       const minute = data.split('_')[2];
-      await handleMinuteSelection(chatId, minute);
+      await handleMinuteSelection(chatId, minute, query.message.message_id);
       bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
         chat_id: chatId,
         message_id: query.message.message_id
@@ -237,12 +233,15 @@ async function handleTimeSelectionStart(chatId, user) {
   }
 }
 
-async function handleHourSelection(chatId, hour) {
+async function handleHourSelection(chatId, hour, messageId) {
   try {
     await User.findOneAndUpdate(
       { telegramId: chatId.toString() },
       { selectedHour: hour }
     );
+
+    // Delete the previous message
+    await bot.deleteMessage(chatId, messageId);
 
     const keyboard = {
       reply_markup: {
@@ -267,13 +266,16 @@ async function handleHourSelection(chatId, hour) {
   }
 }
 
-async function handleMinuteSelection(chatId, minute) {
+async function handleMinuteSelection(chatId, minute, messageId) {
   try {
     const user = await User.findOne({ telegramId: chatId.toString() });
     if (!user || !user.selectedHour) {
       safeSendMessage(chatId, 'Произошла ошибка. Пожалуйста, начни настройку времени заново с помощью команды /settime.');
       return;
     }
+
+    // Delete the previous message
+    await bot.deleteMessage(chatId, messageId);
 
     const time = `${user.selectedHour.toString().padStart(2, '0')}:${minute}`;
     await User.findOneAndUpdate(
@@ -523,11 +525,10 @@ async function setupBotCommands() {
       { command: 'start', description: 'Запустить бота' },
       { command: 'settime', description: 'Настроить время проверки шанса на кофе' },
       { command: 'settimezone', description: 'Настроить часовой пояс' },
-      { command: 'sendhaiku', description: 'Настроить отправку хайку' },
       { command: 'setcookie', description: 'Десерт к кофе' },
+      { command: 'sendhaiku', description: 'Настроить отправку хайку' },
       { command: 'unregister', description: 'Отключить уведомления' }
     ]);
-    logInfo('Bot commands set up successfully');
   } catch (error) {
     logError('Error setting up bot commands:', error);
   }

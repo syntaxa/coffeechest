@@ -357,10 +357,10 @@ async function handleSetCookie(chatId, user) {
           { text: `Десерт сейчас: ${user.dessertSettings?.enabled ? '✅' : '❌'}`, callback_data: 'toggle_dessert' }
         ],
         [
-          { text: `Шанс 20%${user.dessertSettings?.probability === 20 ? ' ✅' : '  '}`, callback_data: 'prob_20' },
-          { text: `Шанс 40%${user.dessertSettings?.probability === 40 ? ' ✅' : '  '}`, callback_data: 'prob_40' },
-          { text: `Шанс 60%${user.dessertSettings?.probability === 60 ? ' ✅' : '  '}`, callback_data: 'prob_60' },
-          { text: `Шанс 80%${user.dessertSettings?.probability === 80 ? ' ✅' : '  '}`, callback_data: 'prob_80' }
+          { text: `20%${user.dessertSettings?.probability === 20 ? ' ✅' : ''}`, callback_data: 'prob_20' },
+          { text: `40%${user.dessertSettings?.probability === 40 ? ' ✅' : ''}`, callback_data: 'prob_40' },
+          { text: `60%${user.dessertSettings?.probability === 60 ? ' ✅' : ''}`, callback_data: 'prob_60' },
+          { text: `80%${user.dessertSettings?.probability === 80 ? ' ✅' : ''}`, callback_data: 'prob_80' }
         ],
         [
           { text: 'Закрыть', callback_data: 'close_dessert' }
@@ -368,7 +368,7 @@ async function handleSetCookie(chatId, user) {
       ]
     }
   };
-  safeSendMessage(chatId, '🍪 Настройка десерта к кофе', keyboard);
+  safeSendMessage(chatId, '🍪 Настройка десерта и шанса его выпадения вместе с кофе (десерт отдельно от кофе не выпадает 🤷‍♂️)', keyboard);
 }
 
 async function updateDessertSettings(chatId, update, messageId) {

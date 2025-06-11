@@ -286,7 +286,6 @@ async function handleNonCommandMessage(chatId, user) {
 
 // Handle all incoming messages and commands
 bot.on('message', async (msg) => {
-  logInfo(`Handling message. Message ID: ${msg.message_id}`);
   const chatId = msg.chat.id;
   const text = msg.text;
 

@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const { logInfo, logError } = require('../utils/logger');
+const config = require('../config');
 let telegramBotInstance;
 
 function initMessenger(botInstance) {
@@ -8,16 +9,13 @@ function initMessenger(botInstance) {
 }
 const User = require('../models/User'); // Assuming models/User.js is in the models directory
 
-const ENVIRONMENT = process.env.ENVIRONMENT;
-const TESTING_CHAT_ID = process.env.TESTING_CHAT_ID; // Chat ID for testing user in test environment
-
 /**
  * Checks if a user is an administrator
  * @param {string} telegramId - The Telegram chat ID of the user to check
  * @returns {boolean} - True if the user is an admin, false otherwise
  */
 function isAdmin(telegramId) {
-  return telegramId == process.env.ADMIN_CHAT_ID;
+  return telegramId == config.ADMIN_CHAT_ID;
 }
 
 /**
@@ -26,7 +24,7 @@ function isAdmin(telegramId) {
  * @param {string} message - The message content to send.
  */
 async function safeSendMessage(telegramId, message, options) {
-  if (ENVIRONMENT === 'PROD') {
+  if (config.ENVIRONMENT === 'PROD') {
     // In production, send message to all users
     try {
       if (!telegramBotInstance) {
@@ -34,20 +32,18 @@ async function safeSendMessage(telegramId, message, options) {
         return;
       }
       await telegramBotInstance.sendMessage(telegramId, message, options);
-      logInfo(`Message sent to user ${telegramId} in PROD environment.`);
     } catch (error) {
       logError(`Error sending message to user ${telegramId} in PROD environment:`, error.message);
     }
-  } else if (ENVIRONMENT === 'TEST') {
+  } else if (config.ENVIRONMENT === 'TEST') {
     // In test, only send message to the testing user
-    if (telegramId == TESTING_CHAT_ID) {
+    if (telegramId == config.TESTING_CHAT_ID) {
       try {
         if (!telegramBotInstance) {
           logError('Messenger not initialized with bot instance.');
           return;
         }
         await telegramBotInstance.sendMessage(telegramId, message, options);
-        logInfo(`Message sent to testing user ${telegramId} in TEST environment.`);
       } catch (error) {
         logError(`Error sending message to testing user ${telegramId} in TEST environment:`, error.message);
       }
@@ -55,7 +51,7 @@ async function safeSendMessage(telegramId, message, options) {
       logInfo(`Message suppressed for non-testing user ${telegramId} in TEST environment.`);
     }
   } else {
-    logError(`Unknown ENVIRONMENT: ${ENVIRONMENT}. Message not sent to ${telegramId}.`);
+    logError(`Unknown ENVIRONMENT: ${config.ENVIRONMENT}. Message not sent to ${telegramId}.`);
   }
 }
 

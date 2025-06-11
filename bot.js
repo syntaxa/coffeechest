@@ -122,10 +122,7 @@ bot.on('callback_query', async (query) => {
     }, query.message.message_id);
   } else if (data === 'close_dessert') {
     try {
-      bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
-        chat_id: chatId,
-        message_id: query.message.message_id
-      });
+      await bot.deleteMessage(chatId, query.message.message_id);
     } catch (error) {
       logError('Close dessert keyboard error:', error);
       safeSendMessage(chatId, 'Произошла ошибка при закрытии меню.');
@@ -349,8 +346,9 @@ async function handleNonCommandMessage(chatId, user) {
   safeSendMessage(chatId, 'Я не понимаю.\n\n' + quickTips);
 }
 
-async function handleSetCookie(chatId, user) {
-  const keyboard = {
+// Helper function to generate dessert settings keyboard
+function generateDessertKeyboard(user) {
+  return {
     reply_markup: {
       inline_keyboard: [
         [
@@ -368,7 +366,10 @@ async function handleSetCookie(chatId, user) {
       ]
     }
   };
-  safeSendMessage(chatId, '🍪 Настройка десерта и шанса его выпадения вместе с кофе (десерт отдельно от кофе не выпадает 🤷‍♂️)', keyboard);
+}
+
+async function handleSetCookie(chatId, user) {
+  safeSendMessage(chatId, '🍪 Настройка десерта и шанса его выпадения вместе с кофе (десерт отдельно от кофе не выпадает 🤷‍♂️)', generateDessertKeyboard(user));
 }
 
 async function updateDessertSettings(chatId, update, messageId) {
@@ -382,26 +383,7 @@ async function updateDessertSettings(chatId, update, messageId) {
       throw new Error('User not found after update');
     }
 
-    const keyboard = {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: `Десерт сейчас: ${updatedUser.dessertSettings?.enabled ? '✅' : '❌'}`, callback_data: 'toggle_dessert' }
-          ],
-          [
-            { text: `Шанс 20%${updatedUser.dessertSettings?.probability === 20 ? ' ✅' : '  '}`, callback_data: 'prob_20' },
-            { text: `Шанс 40%${updatedUser.dessertSettings?.probability === 40 ? ' ✅' : '  '}`, callback_data: 'prob_40' },
-            { text: `Шанс 60%${updatedUser.dessertSettings?.probability === 60 ? ' ✅' : '  '}`, callback_data: 'prob_60' },
-            { text: `Шанс 80%${updatedUser.dessertSettings?.probability === 80 ? ' ✅' : '  '}`, callback_data: 'prob_80' }
-          ],
-          [
-            { text: 'Закрыть', callback_data: 'close_dessert' }
-          ]
-        ]
-      }
-    };
-
-    await bot.editMessageReplyMarkup(keyboard.reply_markup, {
+    await bot.editMessageReplyMarkup(generateDessertKeyboard(updatedUser).reply_markup, {
       chat_id: chatId,
       message_id: messageId
     });

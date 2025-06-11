@@ -357,10 +357,10 @@ async function handleSetCookie(chatId, user) {
           { text: `Десерт сейчас: ${user.dessertSettings?.enabled ? '✅' : '❌'}`, callback_data: 'toggle_dessert' }
         ],
         [
-          { text: `${user.dessertSettings?.probability === 20 ? '✅ ' : ''}Шанс 20%`, callback_data: 'prob_20' },
-          { text: `${user.dessertSettings?.probability === 40 ? '✅ ' : ''}Шанс 40%`, callback_data: 'prob_40' },
-          { text: `${user.dessertSettings?.probability === 60 ? '✅ ' : ''}Шанс 60%`, callback_data: 'prob_60' },
-          { text: `${user.dessertSettings?.probability === 80 ? '✅ ' : ''}Шанс 80%`, callback_data: 'prob_80' }
+          { text: `Шанс 20%${user.dessertSettings?.probability === 20 ? ' ✅' : '  '}`, callback_data: 'prob_20' },
+          { text: `Шанс 40%${user.dessertSettings?.probability === 40 ? ' ✅' : '  '}`, callback_data: 'prob_40' },
+          { text: `Шанс 60%${user.dessertSettings?.probability === 60 ? ' ✅' : '  '}`, callback_data: 'prob_60' },
+          { text: `Шанс 80%${user.dessertSettings?.probability === 80 ? ' ✅' : '  '}`, callback_data: 'prob_80' }
         ],
         [
           { text: 'Закрыть', callback_data: 'close_dessert' }
@@ -389,10 +389,10 @@ async function updateDessertSettings(chatId, update, messageId) {
             { text: `Десерт сейчас: ${updatedUser.dessertSettings?.enabled ? '✅' : '❌'}`, callback_data: 'toggle_dessert' }
           ],
           [
-            { text: `${updatedUser.dessertSettings?.probability === 20 ? '✅ ' : ''}Шанс 20%`, callback_data: 'prob_20' },
-            { text: `${updatedUser.dessertSettings?.probability === 40 ? '✅ ' : ''}Шанс 40%`, callback_data: 'prob_40' },
-            { text: `${updatedUser.dessertSettings?.probability === 60 ? '✅ ' : ''}Шанс 60%`, callback_data: 'prob_60' },
-            { text: `${updatedUser.dessertSettings?.probability === 80 ? '✅ ' : ''}Шанс 80%`, callback_data: 'prob_80' }
+            { text: `Шанс 20%${updatedUser.dessertSettings?.probability === 20 ? ' ✅' : '  '}`, callback_data: 'prob_20' },
+            { text: `Шанс 40%${updatedUser.dessertSettings?.probability === 40 ? ' ✅' : '  '}`, callback_data: 'prob_40' },
+            { text: `Шанс 60%${updatedUser.dessertSettings?.probability === 60 ? ' ✅' : '  '}`, callback_data: 'prob_60' },
+            { text: `Шанс 80%${updatedUser.dessertSettings?.probability === 80 ? ' ✅' : '  '}`, callback_data: 'prob_80' }
           ],
           [
             { text: 'Закрыть', callback_data: 'close_dessert' }

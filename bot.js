@@ -1,6 +1,5 @@
 const { logInfo, logError } = require('./utils/logger');
 const { generateHaikuWithRetry } = require('./utils/gemini');
-const { GEMINI_PROMPT } = require('./config');
 const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
@@ -485,12 +484,7 @@ function setCronTask() {
 
             const shouldSendHaiku = user.sendHaiku === null ? true : user.sendHaiku;
             if (shouldSendHaiku) {
-              let haiku = await generateHaikuWithRetry(
-                GEMINI_PROMPT,
-                botConfig.GEMINI_MODEL_NAME,
-                botConfig.GEMINI_TEMPERATURE,
-                botConfig.GEMINI_MAX_OUTPUT_TOKENS
-              );
+              let haiku = await generateHaikuWithRetry();
               messageToSend += '\n\n' + haiku;
             }
 

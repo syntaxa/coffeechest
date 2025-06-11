@@ -9,7 +9,7 @@ const User = require('./models/User');
 const { connectDB } = require('./utils/database');
 const { safeSendMessage, initMessenger, broadcastToUsers, isAdmin } = require('./utils/messenger'); // Import broadcastToUsers and isAdmin
 //const quickTips = 'Use /settimezone to choose your timezone and /settime HH:MM to set notification time. For now you have to type the full command for time. For example "/settime 08:30". I know this sucks :).  \n\nSend /unregister if you don\'t want to receive messages anymore.';
-const quickTips = 'Используй команду /settimezone для выбора часового пояса уведомления. Набери команду /settime ЧЧ:ММ для настройки времени уведомлений. Пока что бот понимает только команду, написанную руками, например "/settime 08:30".  \n\nКоманда /unregister отключит уведомления и бот про тебя забудет.';
+const quickTips = 'Используй команду /settimezone для выбора часового пояса уведомления. Команда /settime поможет настроить время уведомлений.\n\nКоманда /unregister отключит уведомления и бот про тебя забудет.';
 
 
 const bot = new TelegramBot(botConfig.TELEGRAM_BOT_TOKEN, { polling: true });
@@ -38,7 +38,6 @@ async function ensureRegistered(msg) {
 // Registration command
 // Handle inline keyboard callbacks
 bot.on('callback_query', async (query) => {
-  logInfo(`Handling callback_query. Message ID: ${query.message.message_id}`);
   const chatId = query.message.chat.id;
   const user = await ensureRegistered(query.message);
   if (!user) {
@@ -73,7 +72,20 @@ bot.on('callback_query', async (query) => {
       chat_id: chatId,
       message_id: query.message.message_id
     });
-
+  } else if (data.startsWith('time_hour_')) {
+    const hour = parseInt(data.split('_')[2]);
+    await handleHourSelection(chatId, hour);
+    bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+      chat_id: chatId,
+      message_id: query.message.message_id
+    });
+  } else if (data.startsWith('time_minute_')) {
+    const minute = data.split('_')[2];
+    await handleMinuteSelection(chatId, minute);
+    bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+      chat_id: chatId,
+      message_id: query.message.message_id
+    });
   }
 });
 
@@ -143,23 +155,104 @@ async function handleSetTimezone(chatId, user) {
   });
 }
 
-async function handleSetTime(chatId, user, args) {
-  const time = args[0];
-  if (!time || !/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-    safeSendMessage(chatId, 'Неверный формат. Используй ЧЧ:ММ, например 09:00');
-    return;
-  }
-
+async function handleTimeSelectionStart(chatId, user) {
   try {
     await User.findOneAndUpdate(
       { telegramId: chatId.toString() },
-      { notificationTime: time }
+      { 
+        pendingTimeUpdate: true,
+        selectedHour: null
+      }
     );
+
+    const keyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '6ч', callback_data: 'time_hour_6' },
+            { text: '7ч', callback_data: 'time_hour_7' },
+            { text: '8ч', callback_data: 'time_hour_8' },
+            { text: '9ч', callback_data: 'time_hour_9' }
+          ],
+          [
+            { text: '10ч', callback_data: 'time_hour_10' },
+            { text: '11ч', callback_data: 'time_hour_11' },
+            { text: '12ч', callback_data: 'time_hour_12' },
+            { text: '13ч', callback_data: 'time_hour_13' }
+          ],
+          [
+            { text: '14ч', callback_data: 'time_hour_14' },
+            { text: '15ч', callback_data: 'time_hour_15' },
+            { text: '16ч', callback_data: 'time_hour_16' },
+            { text: '17ч', callback_data: 'time_hour_17' }
+          ]
+        ]
+      }
+    };
+    safeSendMessage(chatId, 'Настроить время проверки шанса на кофе. Время -- твоё местное\n\nВыбери час:', keyboard);
+  } catch (error) {
+    logError('Error starting time selection:', error);
+    safeSendMessage(chatId, 'Произошла ошибка при настройке времени.');
+  }
+}
+
+async function handleHourSelection(chatId, hour) {
+  try {
+    await User.findOneAndUpdate(
+      { telegramId: chatId.toString() },
+      { selectedHour: hour }
+    );
+
+    const keyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '00м', callback_data: 'time_minute_00' },
+            { text: '10м', callback_data: 'time_minute_10' },
+            { text: '20м', callback_data: 'time_minute_20' }
+          ],
+          [
+            { text: '30м', callback_data: 'time_minute_30' },
+            { text: '40м', callback_data: 'time_minute_40' },
+            { text: '50м', callback_data: 'time_minute_50' }
+          ]
+        ]
+      }
+    };
+    safeSendMessage(chatId, 'Выбери минуты:', keyboard);
+  } catch (error) {
+    logError('Error handling hour selection:', error);
+    safeSendMessage(chatId, 'Произошла ошибка при выборе часа.');
+  }
+}
+
+async function handleMinuteSelection(chatId, minute) {
+  try {
+    const user = await User.findOne({ telegramId: chatId.toString() });
+    if (!user || !user.selectedHour) {
+      safeSendMessage(chatId, 'Произошла ошибка. Пожалуйста, начни настройку времени заново с помощью команды /settime.');
+      return;
+    }
+
+    const time = `${user.selectedHour.toString().padStart(2, '0')}:${minute}`;
+    await User.findOneAndUpdate(
+      { telegramId: chatId.toString() },
+      { 
+        notificationTime: time,
+        pendingTimeUpdate: false,
+        selectedHour: null
+      }
+    );
+
     safeSendMessage(chatId, `Время уведомления установлено на ${time}.`);
   } catch (error) {
-    logError('Time update error:', error);
-    safeSendMessage(chatId, 'Ошибка установки времени уведомления.');
+    logError('Error handling minute selection:', error);
+    safeSendMessage(chatId, 'Произошла ошибка при установке времени.');
   }
+}
+
+async function handleSetTime(chatId, user) {
+  await handleTimeSelectionStart(chatId, user);
 }
 
 async function handleBroadcast(chatId, user, args) {
@@ -199,18 +292,18 @@ bot.on('message', async (msg) => {
 
   // avoiding system messages like 'user xyz was added' etc
   if(text) {
-
     // Handle start command
     if (text.toLocaleLowerCase() === '/start') {
       await handleStart(msg, chatId);
       return;
     } // Stop processing if handling start command
 
-    // All other commnads require user to be regisgtered with bot
+    // All other commands require user to be registered with bot
     const user = await ensureRegistered(msg);
+    if (!user) return;
 
     // Handle manual timezone input if pending
-    if (user && user.pendingTimezone) {
+    if (user.pendingTimezone) {
       if (moment.tz.zone(text)) {
         await User.findOneAndUpdate(
           { telegramId: chatId.toString() },
@@ -223,51 +316,29 @@ bot.on('message', async (msg) => {
       return; // Stop processing if handling pending timezone
     }
 
-
     // Handle commands
     if (text.startsWith('/')) {
-
       const [command, ...args] = text.slice(1).split(' ');
       const lowerCaseCommand = command.toLowerCase();
 
       switch (lowerCaseCommand) {
         case 'unregister':
-          // Re-implement unregister logic
-          if (!user) break;
-
           await handleUnregister(chatId, user);
           break;
         case 'settimezone':
-          // Re-implement settimezone logic
-          if (!user) break;
-
           await handleSetTimezone(chatId, user);
           break;
         case 'settime':
-          // Re-implement settime logic
-          if (!user) break;
-
-          const time = args[0];
-          if (!time || !/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-            safeSendMessage(chatId, 'Неверный формат. Используй ЧЧ:ММ, например 09:00');
-            return;
-          }
-
-          await handleSetTime(chatId, user, args);
+          await handleSetTime(chatId, user);
           break;
         case 'broadcast':
-          if (!user) break;
           await handleBroadcast(chatId, user, args);
           break;
         default:
-          // Unknown command
-          if (!user) return;
           await handleUnknownCommand(chatId, user);
           break;
       }
     } else {
-      // Handle non-command messages
-      if (!user) return;
       await handleNonCommandMessage(chatId, user);
     }
   }
@@ -325,6 +396,20 @@ function setCronTask() {
   });
 }
 
+async function setupBotCommands() {
+  try {
+    await bot.setMyCommands([
+      { command: 'start', description: 'Запустить бота' },
+      { command: 'settime', description: 'Настроить время проверки шанса на кофе' },
+      { command: 'settimezone', description: 'Настроить часовой пояс' },
+      { command: 'unregister', description: 'Отключить уведомления' }
+    ]);
+    logInfo('Bot commands set up successfully');
+  } catch (error) {
+    logError('Error setting up bot commands:', error);
+  }
+}
+
 async function main() {
   await connectDB();
 
@@ -335,6 +420,7 @@ async function main() {
     process.exit(1);
   }
 
+  await setupBotCommands();
   setCronTask();
 
   bot.on('error', (error) => {

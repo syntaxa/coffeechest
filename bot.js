@@ -266,7 +266,7 @@ async function handleSendHaiku(chatId, user) {
   const keyboard = {
     reply_markup: {
       inline_keyboard: [
-        [{ text: `Присылать хайку ${currentState ? '✅' : '❌'}`, callback_data: 'toggle_haiku' }]
+        [{ text: `Настройка сейчас: ${currentState ? '✅' : '❌'} Нажми, чтобы переключить`, callback_data: 'toggle_haiku' }]
       ]
     }
   };

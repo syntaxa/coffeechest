@@ -65,6 +65,7 @@ bot.on('callback_query', async (query) => {
       });
     } catch (error) {
       logError('Timezone update error:', error);
+      safeSendMessage(chatId, 'Произошла ошибка при обновлении часового пояса.');
     }
   } else if (data === 'tz_manual') {
     safeSendMessage(chatId, 'Отправь часовой пояс в формате Region/City (например, America/New_York, https://timeapi.io/documentation/iana-timezones):');
@@ -73,25 +74,62 @@ bot.on('callback_query', async (query) => {
       message_id: query.message.message_id
     });
   } else if (data.startsWith('time_hour_')) {
-    const hour = parseInt(data.split('_')[2]);
-    await handleHourSelection(chatId, hour);
-    bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
-      chat_id: chatId,
-      message_id: query.message.message_id
-    });
+    try {
+      const hour = parseInt(data.split('_')[2]);
+      await handleHourSelection(chatId, hour);
+      bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+        chat_id: chatId,
+        message_id: query.message.message_id
+      });
+    } catch (error) {
+      logError('Hour selection error:', error);
+      safeSendMessage(chatId, 'Произошла ошибка при выборе часа.');
+    }
   } else if (data.startsWith('time_minute_')) {
-    const minute = data.split('_')[2];
-    await handleMinuteSelection(chatId, minute);
-    bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
-      chat_id: chatId,
-      message_id: query.message.message_id
-    });
+    try {
+      const minute = data.split('_')[2];
+      await handleMinuteSelection(chatId, minute);
+      bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+        chat_id: chatId,
+        message_id: query.message.message_id
+      });
+    } catch (error) {
+      logError('Minute selection error:', error);
+      safeSendMessage(chatId, 'Произошла ошибка при выборе минут.');
+    }
   } else if (data === 'toggle_haiku') {
-    await handleHaikuToggle(chatId, user);
-    bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
-      chat_id: chatId,
-      message_id: query.message.message_id
+    try {
+      await handleHaikuToggle(chatId, user);
+      bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+        chat_id: chatId,
+        message_id: query.message.message_id
+      });
+    } catch (error) {
+      logError('Haiku toggle error:', error);
+      safeSendMessage(chatId, 'Произошла ошибка при настройке хайку.');
+    }
+  } else if (data === 'toggle_dessert') {
+    const newState = !user.dessertSettings?.enabled;
+    await updateDessertSettings(chatId, {
+      ...user.dessertSettings,
+      enabled: newState
     });
+  } else if (data.startsWith('prob_')) {
+    const probability = parseInt(data.split('_')[1]);
+    await updateDessertSettings(chatId, {
+      ...user.dessertSettings,
+      probability
+    });
+  } else if (data === 'close_dessert') {
+    try {
+      bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+        chat_id: chatId,
+        message_id: query.message.message_id
+      });
+    } catch (error) {
+      logError('Close dessert keyboard error:', error);
+      safeSendMessage(chatId, 'Произошла ошибка при закрытии меню.');
+    }
   }
 });
 
@@ -311,6 +349,45 @@ async function handleNonCommandMessage(chatId, user) {
   safeSendMessage(chatId, 'Я не понимаю.\n\n' + quickTips);
 }
 
+async function handleSetCookie(chatId, user) {
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: `Десерт сейчас: ${user.dessertSettings?.enabled ? '✅' : '❌'}`, callback_data: 'toggle_dessert' }
+        ],
+        [
+          { text: `${user.dessertSettings?.probability === 20 ? '✅ ' : ''}Шанс 20%`, callback_data: 'prob_20' },
+          { text: `${user.dessertSettings?.probability === 40 ? '✅ ' : ''}Шанс 40%`, callback_data: 'prob_40' },
+          { text: `${user.dessertSettings?.probability === 60 ? '✅ ' : ''}Шанс 60%`, callback_data: 'prob_60' },
+          { text: `${user.dessertSettings?.probability === 80 ? '✅ ' : ''}Шанс 80%`, callback_data: 'prob_80' }
+        ],
+        [
+          { text: 'Закрыть', callback_data: 'close_dessert' }
+        ]
+      ]
+    }
+  };
+  safeSendMessage(chatId, '🍪 Настройка десерта к кофе', keyboard);
+}
+
+async function updateDessertSettings(chatId, update) {
+  try {
+    await User.findOneAndUpdate(
+      { telegramId: chatId.toString() },
+      { $set: { dessertSettings: update } }
+    );
+    const updatedUser = await User.findOne({ telegramId: chatId.toString() });
+    if (!updatedUser) {
+      throw new Error('User not found after update');
+    }
+    await handleSetCookie(chatId, updatedUser);
+  } catch (error) {
+    logError('Dessert settings update error:', error);
+    safeSendMessage(chatId, 'Произошла ошибка при настройке десерта.');
+  }
+}
+
 // Handle all incoming messages and commands
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
@@ -360,6 +437,9 @@ bot.on('message', async (msg) => {
         case 'sendhaiku':
           await handleSendHaiku(chatId, user);
           break;
+        case 'setcookie':
+          await handleSetCookie(chatId, user);
+          break;
         case 'broadcast':
           await handleBroadcast(chatId, user, args);
           break;
@@ -388,25 +468,26 @@ function setCronTask() {
           logInfo(`User ${user.username} rolled: ${hasWon}`);
 
           if (hasWon) {
-            let messageToSend;
-            const shouldSendHaiku = user.sendHaiku === null ? true : user.sendHaiku;
+            let messageToSend = botConfig.WIN_MESSAGE;
             
+            // Check for dessert win if enabled
+            if (user.dessertSettings?.enabled) {
+              const dessertProbability = user.dessertSettings.probability / 100;
+              const hasWonDessert = Math.random() < dessertProbability;
+              if (hasWonDessert) {
+                messageToSend += '\n\nНу и денёк 🌞! Тебе выпал ещё и десерт 🍰!';
+              }
+            }
+
+            const shouldSendHaiku = user.sendHaiku === null ? true : user.sendHaiku;
             if (shouldSendHaiku) {
               let haiku = await generateHaikuWithRetry(
                 GEMINI_PROMPT,
+                botConfig.GEMINI_MODEL_NAME,
                 botConfig.GEMINI_TEMPERATURE,
                 botConfig.GEMINI_MAX_OUTPUT_TOKENS
               );
-
-              if (haiku) {
-                messageToSend = `Поздравляю! Тебе выпало кофечко сегодня! 🎉\n\n${haiku}`;
-                logInfo(`Sent haiku to user ${user.username} (${user.telegramId}): ${haiku}`);
-              } else {
-                messageToSend = botConfig.WIN_MESSAGE;
-                logInfo(`Failed to generate haiku for user ${user.username} (${user.telegramId}). Sending standard message.`);
-              }
-            } else {
-              messageToSend = botConfig.WIN_MESSAGE;
+              messageToSend += '\n\n' + haiku;
             }
 
             try {
@@ -438,6 +519,7 @@ async function setupBotCommands() {
       { command: 'settime', description: 'Настроить время проверки шанса на кофе' },
       { command: 'settimezone', description: 'Настроить часовой пояс' },
       { command: 'sendhaiku', description: 'Настроить отправку хайку' },
+      { command: 'setcookie', description: 'Десерт к кофе' },
       { command: 'unregister', description: 'Отключить уведомления' }
     ]);
     logInfo('Bot commands set up successfully');

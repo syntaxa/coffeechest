@@ -4,3 +4,5 @@ node_modules/
 .vscode/
 .DS_Store
 package-lock.json
+implementation_plan.md
+prd_dessert_feature.md

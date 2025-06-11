@@ -26,6 +26,16 @@ const userSchema = new mongoose.Schema({
   sendHaiku: {
     type: Boolean,
     default: null
+  },
+  dessertSettings: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    probability: {
+      type: Number,
+      default: 20
+    }
   }
 });
 

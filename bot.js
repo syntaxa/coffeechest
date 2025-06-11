@@ -73,10 +73,6 @@ bot.on('callback_query', async (query) => {
     try {
       const hour = parseInt(data.split('_')[2]);
       await handleHourSelection(chatId, hour, query.message.message_id);
-      bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
-        chat_id: chatId,
-        message_id: query.message.message_id
-      });
     } catch (error) {
       logError('Hour selection error:', error);
       safeSendMessage(chatId, 'Произошла ошибка при выборе часа.');
@@ -85,10 +81,6 @@ bot.on('callback_query', async (query) => {
     try {
       const minute = data.split('_')[2];
       await handleMinuteSelection(chatId, minute, query.message.message_id);
-      bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
-        chat_id: chatId,
-        message_id: query.message.message_id
-      });
     } catch (error) {
       logError('Minute selection error:', error);
       safeSendMessage(chatId, 'Произошла ошибка при выборе минут.');
@@ -96,10 +88,7 @@ bot.on('callback_query', async (query) => {
   } else if (data === 'toggle_haiku') {
     try {
       await handleHaikuToggle(chatId, user);
-      bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
-        chat_id: chatId,
-        message_id: query.message.message_id
-      });
+      await bot.deleteMessage(chatId, query.message.message_id);
     } catch (error) {
       logError('Haiku toggle error:', error);
       safeSendMessage(chatId, 'Произошла ошибка при настройке хайку.');

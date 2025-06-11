@@ -65,10 +65,12 @@ async function broadcastToUsers(message) {
   try {
     const users = await User.find();
     logInfo(`Broadcasting message to ${users.length} users.`);
+    let successfulSends = 0;
 
     for (const user of users) {
       try {
         await safeSendMessage(user.telegramId, message);
+        successfulSends++;
       } catch (error) {
         if ((error.response) && (error.response.statusCode === 403)) {
           // User has blocked the bot, delete them from the database
@@ -79,9 +81,11 @@ async function broadcastToUsers(message) {
         }
       }
     }
-    logInfo('Broadcast complete.');
+    logInfo(`Broadcast complete. Successfully sent to ${successfulSends} users.`);
+    return successfulSends;
   } catch (error) {
     logError('Error during broadcast:', error);
+    throw error;
   }
 }
 

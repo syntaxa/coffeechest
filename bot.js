@@ -86,6 +86,12 @@ bot.on('callback_query', async (query) => {
       chat_id: chatId,
       message_id: query.message.message_id
     });
+  } else if (data === 'toggle_haiku') {
+    await handleHaikuToggle(chatId, user);
+    bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+      chat_id: chatId,
+      message_id: query.message.message_id
+    });
   }
 });
 
@@ -255,6 +261,27 @@ async function handleSetTime(chatId, user) {
   await handleTimeSelectionStart(chatId, user);
 }
 
+async function handleSendHaiku(chatId, user) {
+  const currentState = user.sendHaiku === null ? true : user.sendHaiku;
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: `Присылать хайку ${currentState ? '✅' : '❌'}`, callback_data: 'toggle_haiku' }]
+      ]
+    }
+  };
+  safeSendMessage(chatId, 'Настройка отправки выдуманного стишка вместе с кофейным поздравлением', keyboard);
+}
+
+async function handleHaikuToggle(chatId, user) {
+  const newState = user.sendHaiku === null ? false : !user.sendHaiku;
+  await User.findOneAndUpdate(
+    { telegramId: chatId.toString() },
+    { sendHaiku: newState }
+  );
+  safeSendMessage(chatId, `Присылать хайку ${newState ? '✅' : '❌'}`);
+}
+
 async function handleBroadcast(chatId, user, args) {
   if (!isAdmin(chatId.toString())) {
     safeSendMessage(chatId, 'Эта команда доступна только администраторам.');
@@ -268,8 +295,8 @@ async function handleBroadcast(chatId, user, args) {
   }
 
   try {
-    await broadcastToUsers(message);
-    safeSendMessage(chatId, 'Сообщение успешно отправлено всем пользователям.');
+    const successfulSends = await broadcastToUsers(message);
+    safeSendMessage(chatId, `Сообщение успешно отправлено ${successfulSends} пользователям.`);
   } catch (error) {
     logError('Broadcast error:', error);
     safeSendMessage(chatId, 'Произошла ошибка при отправке сообщения.');
@@ -330,6 +357,9 @@ bot.on('message', async (msg) => {
         case 'settime':
           await handleSetTime(chatId, user);
           break;
+        case 'sendhaiku':
+          await handleSendHaiku(chatId, user);
+          break;
         case 'broadcast':
           await handleBroadcast(chatId, user, args);
           break;
@@ -358,19 +388,25 @@ function setCronTask() {
           logInfo(`User ${user.username} rolled: ${hasWon}`);
 
           if (hasWon) {
-            let haiku = await generateHaikuWithRetry(
-              GEMINI_PROMPT,
-              botConfig.GEMINI_TEMPERATURE,
-              botConfig.GEMINI_MAX_OUTPUT_TOKENS
-            );
-
             let messageToSend;
-            if (haiku) {
-              messageToSend = `Поздравляю! Тебе выпало кофечко сегодня! 🎉\n\n${haiku}`;
-              logInfo(`Sent haiku to user ${user.username} (${user.telegramId}): ${haiku}`);
+            const shouldSendHaiku = user.sendHaiku === null ? true : user.sendHaiku;
+            
+            if (shouldSendHaiku) {
+              let haiku = await generateHaikuWithRetry(
+                GEMINI_PROMPT,
+                botConfig.GEMINI_TEMPERATURE,
+                botConfig.GEMINI_MAX_OUTPUT_TOKENS
+              );
+
+              if (haiku) {
+                messageToSend = `Поздравляю! Тебе выпало кофечко сегодня! 🎉\n\n${haiku}`;
+                logInfo(`Sent haiku to user ${user.username} (${user.telegramId}): ${haiku}`);
+              } else {
+                messageToSend = botConfig.WIN_MESSAGE;
+                logInfo(`Failed to generate haiku for user ${user.username} (${user.telegramId}). Sending standard message.`);
+              }
             } else {
               messageToSend = botConfig.WIN_MESSAGE;
-              logInfo(`Failed to generate haiku for user ${user.username} (${user.telegramId}). Sending standard message.`);
             }
 
             try {
@@ -401,6 +437,7 @@ async function setupBotCommands() {
       { command: 'start', description: 'Запустить бота' },
       { command: 'settime', description: 'Настроить время проверки шанса на кофе' },
       { command: 'settimezone', description: 'Настроить часовой пояс' },
+      { command: 'sendhaiku', description: 'Настроить отправку хайку' },
       { command: 'unregister', description: 'Отключить уведомления' }
     ]);
     logInfo('Bot commands set up successfully');

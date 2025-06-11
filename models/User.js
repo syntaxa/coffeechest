@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema({
   pendingTimezone: {
     type: Boolean,
     default: false
+  },
+  sendHaiku: {
+    type: Boolean,
+    default: null
   }
 });
 

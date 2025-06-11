@@ -241,7 +241,11 @@ async function handleHourSelection(chatId, hour, messageId) {
     );
 
     // Delete the previous message
-    await bot.deleteMessage(chatId, messageId);
+    try {
+      await bot.deleteMessage(chatId, messageId);
+    } catch (error) {
+      logError('Error deleting hour selection message:', error);
+    }
 
     const keyboard = {
       reply_markup: {
@@ -275,7 +279,11 @@ async function handleMinuteSelection(chatId, minute, messageId) {
     }
 
     // Delete the previous message
-    await bot.deleteMessage(chatId, messageId);
+    try {
+      await bot.deleteMessage(chatId, messageId);
+    } catch (error) {
+      logError('Error deleting minute selection message:', error);
+    }
 
     const time = `${user.selectedHour.toString().padStart(2, '0')}:${minute}`;
     await User.findOneAndUpdate(

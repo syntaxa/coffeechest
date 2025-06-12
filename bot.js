@@ -350,7 +350,7 @@ function generateDessertKeyboard(user) {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: `Десерт сейчас: ${user.dessertSettings?.enabled ? '✅' : '❌'}`, callback_data: 'toggle_dessert' }
+          { text: `Десерт сейчас: ${user.dessertSettings?.enabled ? 'ВКЛЮЧЕН' : 'ВЫКЛЮЧЕН'}`, callback_data: 'toggle_dessert' }
         ],
         [
           { text: `20%${user.dessertSettings?.probability === 20 ? ' ✅' : ''}`, callback_data: 'prob_20' },

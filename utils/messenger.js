@@ -33,6 +33,10 @@ async function safeSendMessage(telegramId, message, options) {
       }
       await telegramBotInstance.sendMessage(telegramId, message, options);
     } catch (error) {
+      // Re-throw 403 errors so they can be handled by the caller (user blocked the bot)
+      if (error.response && error.response.statusCode === 403) {
+        throw error;
+      }
       logError(`Error sending message to user ${telegramId} in PROD environment:`, error.message);
     }
   } else if (config.ENVIRONMENT === 'TEST') {
@@ -45,6 +49,10 @@ async function safeSendMessage(telegramId, message, options) {
         }
         await telegramBotInstance.sendMessage(telegramId, message, options);
       } catch (error) {
+        // Re-throw 403 errors so they can be handled by the caller (user blocked the bot)
+        if (error.response && error.response.statusCode === 403) {
+          throw error;
+        }
         logError(`Error sending message to testing user ${telegramId} in TEST environment:`, error.message);
       }
     } else {

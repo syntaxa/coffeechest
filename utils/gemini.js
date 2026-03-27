@@ -9,6 +9,9 @@ async function generateHaiku() {
     generationConfig: {
       temperature: botConfig.GEMINI_TEMPERATURE,
       maxOutputTokens: botConfig.GEMINI_MAX_OUTPUT_TOKENS,
+      thinkingConfig: {
+        thinkingBudget: 0
+      }      
     },
   });
 

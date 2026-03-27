@@ -3,6 +3,7 @@ const { generateHaikuWithRetry } = require('./utils/gemini');
 const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
+const https = require('https');
 const botConfig = require('./config');
 const User = require('./models/User');
 const { connectDB } = require('./utils/database');
@@ -456,6 +457,32 @@ bot.on('message', async (msg) => {
   }
 });
 
+function sendHeartbeatNonBlocking(url, status = 'ok') {
+  if (!url) return;
+  try {
+    const hbUrl = new URL(url);
+    hbUrl.searchParams.set('status', status);
+
+    const req = https.get(hbUrl.toString(), (res) => {
+      // consume response to free socket
+      res.on('data', () => {});
+      res.on('end', () => {});
+    });
+
+    req.on('error', (err) => {
+      // log but do not throw — heartbeat must not affect job flow
+      logError('Heartbeat request error:', err && err.message ? err.message : err);
+    });
+
+    // abort if it takes too long so it won't block the cron
+    req.setTimeout(2000, () => {
+      req.abort();
+    });
+  } catch (err) {
+    logError('Heartbeat setup error:', err && err.message ? err.message : err);
+  }
+}
+
 // Cron job to check every minute on working days
 // todo: improve scalability
 function setCronTask() {
@@ -506,6 +533,11 @@ function setCronTask() {
             }
           }
         }
+      }
+
+      const hb = process.env.HEARTBEAT_URL;
+      if (hb) {
+        sendHeartbeatNonBlocking(hb, 'ok');
       }
     } catch (error) {
       logError('Cron error:', error);

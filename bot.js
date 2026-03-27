@@ -466,7 +466,7 @@ function setCronTask() {
         const now = moment().tz(user.timeZone);
         const [targetHour, targetMinute] = user.notificationTime.split(':');
         
-        logInfo(`User: ${user.username || 'N/A'}, TimeZone: ${user.timeZone}, NotificationTime: ${user.notificationTime}, Now TimeZone: ${now.tz()}, Now Hour: ${now.hours()}, Now Minute: ${now.minutes()}`);
+//        logInfo(`User: ${user.username || 'N/A'}, TimeZone: ${user.timeZone}, NotificationTime: ${user.notificationTime}, Now TimeZone: ${now.tz()}, Now Hour: ${now.hours()}, Now Minute: ${now.minutes()}`);
 
         if (now.hours() === parseInt(targetHour) && now.minutes() === parseInt(targetMinute)) {
           const hasWon = Math.random() < 0.5;

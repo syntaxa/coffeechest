@@ -487,7 +487,10 @@ function setCronTask() {
             const shouldSendHaiku = user.sendHaiku === null ? true : user.sendHaiku;
             if (shouldSendHaiku) {
               let haiku = await generateHaikuWithRetry();
-              messageToSend += '\n\n' + haiku;
+              if (haiku) {
+                   messageToSend += '\n\n' + haiku;
+              }
+            
             }
 
             try {

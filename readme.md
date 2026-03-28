@@ -43,7 +43,7 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
    MONGODB_URI=<your-mongodb-uri>
    GEMINI_API_KEY=<your-gemini-api-key>
    ADMIN_CHAT_ID=<your-telegram-chat-id>  # Your Telegram chat ID with the bot for admin privileges
-
+   HEARTBEAT_URL=<url for GET heartbeat requests> or leave it blank to disable heartbeat
    # Environment configuration
    ENVIRONMENT=PROD  # Set to 'PROD' for production or 'TEST' for testing
 
@@ -57,6 +57,10 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
    GEMINI_MAX_OUTPUT_TOKENS=300  # Default is 300
    GEMINI_PROMPT="придумай три темы для стихов. придумай один стих в стиле хайку про кофе с тонким юмором и используй придуманные ранее темы для вдохновения. ответ должен содержать только текст хайку. убери темы из результата."  # Default prompt
    ```
+ENVIRONMENT=TEST enables the following behaviour:
+* messages are sent via telegram to admin user only
+* no heartbeats are sent to external monitoring service
+* bot schedule becomes daily instead of working days
 
 4. Start the bot:
    ```bash

@@ -10,7 +10,7 @@ const { connectDB } = require('./utils/database');
 const { safeSendMessage, initMessenger, broadcastToUsers, isAdmin } = require('./utils/messenger'); // Import broadcastToUsers and isAdmin
 //const quickTips = 'Use /settimezone to choose your timezone and /settime HH:MM to set notification time. For now you have to type the full command for time. For example "/settime 08:30". I know this sucks :).  \n\nSend /unregister if you don\'t want to receive messages anymore.';
 const quickTips = 'Используй команду /settimezone для выбора часового пояса уведомления. Команда /settime поможет настроить время уведомлений.\n\nКоманда /unregister отключит уведомления и бот про тебя забудет.';
-
+const TEST_ENV = 'TEST';
 
 const bot = new TelegramBot(botConfig.TELEGRAM_BOT_TOKEN, { polling: true });
 
@@ -458,7 +458,7 @@ bot.on('message', async (msg) => {
 });
 
 function sendHeartbeatNonBlocking(url, status = 'ok') {
-  if (!url) return;
+  if (!url || botConfig.ENVIRONMENT === TEST_ENV) return;
   try {
     const hbUrl = new URL(url);
     hbUrl.searchParams.set('status', status);
@@ -486,14 +486,17 @@ function sendHeartbeatNonBlocking(url, status = 'ok') {
 // Cron job to check every minute on working days
 // todo: improve scalability
 function setCronTask() {
-  cron.schedule('* * * * 1-5', async () => {
+  let scheduleStr = (botConfig.ENVIRONMENT === TEST_ENV ? '* * * * *' : '* * * * 1-5');
+
+  cron.schedule(scheduleStr, async () => {
     try {
       const users = await User.find();
       for (const user of users) {
         const now = moment().tz(user.timeZone);
         const [targetHour, targetMinute] = user.notificationTime.split(':');
         
-//        logInfo(`User: ${user.username || 'N/A'}, TimeZone: ${user.timeZone}, NotificationTime: ${user.notificationTime}, Now TimeZone: ${now.tz()}, Now Hour: ${now.hours()}, Now Minute: ${now.minutes()}`);
+	if (botConfig.ENVIRONMENT === TEST_ENV)
+	  logInfo(`User: ${user.username || 'N/A'}, TimeZone: ${user.timeZone}, NotificationTime: ${user.notificationTime}, Now TimeZone: ${now.tz()}, Now Hour: ${now.hours()}, Now Minute: ${now.minutes()}`);
 
         if (now.hours() === parseInt(targetHour) && now.minutes() === parseInt(targetMinute)) {
           const hasWon = Math.random() < 0.5;

@@ -10,6 +10,7 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
 - **Set Notification Time**: Users can set their notification time using the `/settime HH:MM` command.
 - **Daily Lottery**: The bot runs a daily lottery and notifies winners. The lottery is a random number generator that determines whether the user wins or loses.
 - **Cron Job**: The bot checks every minute on working days to send notifications at the correct time. This cron job is scheduled to run every minute on weekdays (Monday to Friday).
+- **Process heartbeat**: Optional HTTP GET to `HEARTBEAT_URL` every **5 minutes**, including weekends, to signal that the Node process is alive. This is separate from the weekday lottery cron (which does not run on Saturday–Sunday).
 - **Admin Broadcast**: Administrators can broadcast messages to all users using the `/broadcast` command followed by the message text.
 
 
@@ -43,7 +44,7 @@ This Telegram bot brings excitement to your daily coffee routine by simulating a
    MONGODB_URI=<your-mongodb-uri>
    GEMINI_API_KEY=<your-gemini-api-key>
    ADMIN_CHAT_ID=<your-telegram-chat-id>  # Your Telegram chat ID with the bot for admin privileges
-   HEARTBEAT_URL=<url for GET heartbeat requests> or leave it blank to disable heartbeat
+   HEARTBEAT_URL=<url>  # Optional. GET every 5 min (7 days/week) with query param status=ok; omit to disable
    # Environment configuration
    ENVIRONMENT=PROD  # Set to 'PROD' for production or 'TEST' for testing
 
@@ -90,6 +91,7 @@ ENVIRONMENT=TEST enables the following behaviour:
 - `ENVIRONMENT`: Set to 'PROD' for production or 'TEST' for testing mode.
 - `TESTING_CHAT_ID`: Telegram chat ID of the user who will receive messages in test mode.
 - `ADMIN_CHAT_ID`: Your Telegram chat ID with the bot for admin privileges.
+- `HEARTBEAT_URL` (optional): If set (and not in `TEST` mode), the bot issues a non-blocking HTTPS GET to this URL every **5 minutes**, including weekends, with `status=ok` appended as a query parameter. Use this for external uptime monitoring (e.g. Healthchecks.io). It reflects process liveness only, not whether the lottery cron ran.
 
 ### Test Mode
 

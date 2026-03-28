@@ -483,6 +483,18 @@ function sendHeartbeatNonBlocking(url, status = 'ok') {
   }
 }
 
+const PROCESS_HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000;
+
+/** Liveness pings for uptime monitors every 5 min, including weekends (not tied to the coffee cron). */
+function startProcessHeartbeat() {
+  const hb = process.env.HEARTBEAT_URL;
+  if (!hb || botConfig.ENVIRONMENT === TEST_ENV) return;
+
+  const tick = () => sendHeartbeatNonBlocking(hb, 'ok');
+  tick();
+  setInterval(tick, PROCESS_HEARTBEAT_INTERVAL_MS);
+}
+
 // Cron job to check every minute on working days
 // todo: improve scalability
 function setCronTask() {
@@ -537,11 +549,6 @@ function setCronTask() {
           }
         }
       }
-
-      const hb = process.env.HEARTBEAT_URL;
-      if (hb) {
-        sendHeartbeatNonBlocking(hb, 'ok');
-      }
     } catch (error) {
       logError('Cron error:', error);
     }
@@ -577,6 +584,7 @@ async function main() {
 
   await setupBotCommands();
   setCronTask();
+  startProcessHeartbeat();
 
   bot.on('error', (error) => {
     logError('Bot error:', error);

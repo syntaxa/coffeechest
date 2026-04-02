@@ -1,5 +1,5 @@
 const { logInfo, logError } = require('./utils/logger');
-const { generateHaikuWithRetry } = require('./utils/gemini');
+const { getOrCreateDailyHaiku, getUtcDayKey } = require('./utils/dailyHaiku');
 const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
@@ -503,6 +503,9 @@ function setCronTask() {
   cron.schedule(scheduleStr, async () => {
     try {
       const users = await User.find();
+      let dailyHaikuCacheLoaded = false;
+      let dailyHaikuText = null;
+
       for (const user of users) {
         const now = moment().tz(user.timeZone);
         const [targetHour, targetMinute] = user.notificationTime.split(':');
@@ -528,9 +531,14 @@ function setCronTask() {
 
             const shouldSendHaiku = user.sendHaiku === null ? true : user.sendHaiku;
             if (shouldSendHaiku) {
-              let haiku = await generateHaikuWithRetry();
-              if (haiku) {
-                   messageToSend += '\n\n' + haiku;
+              if (!dailyHaikuCacheLoaded) {
+                const dayKey = getUtcDayKey();
+                dailyHaikuText = await getOrCreateDailyHaiku(dayKey);
+                dailyHaikuCacheLoaded = true;
+              }
+
+              if (dailyHaikuText) {
+                   messageToSend += '\n\n' + dailyHaikuText;
               }
             
             }

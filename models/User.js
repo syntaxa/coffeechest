@@ -39,6 +39,8 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+userSchema.index({ notificationTime: 1, timeZone: 1 });
+
 userSchema.set('strict', false);
 userSchema.set('strictQuery', false);
 

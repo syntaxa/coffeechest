@@ -1,6 +1,6 @@
 const moment = require('moment-timezone');
 const DailyHaiku = require('../models/DailyHaiku');
-const { generateHaikuWithRetry } = require('./gemini');
+const { generateHaikuWithRetry } = require('./llm');
 const { logInfo, logError } = require('./logger');
 
 const DEFAULT_WAIT_ATTEMPTS = 6;
@@ -49,7 +49,7 @@ async function runGeneration(dayKey, ownerToken) {
       {
         $set: {
           status: 'failed',
-          generationError: 'Gemini returned empty response'
+          generationError: 'LLM provider returned empty response'
         },
         $unset: { generationOwner: 1 }
       }

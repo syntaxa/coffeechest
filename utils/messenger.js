@@ -3,6 +3,19 @@ require('dotenv').config();
 const { logInfo, logError } = require('../utils/logger');
 const config = require('../config');
 let telegramBotInstance;
+const TELEGRAM_MESSAGE_LIMIT = 4096;
+
+function trimMessageToTelegramLimit(message) {
+  if (typeof message !== 'string') {
+    return message;
+  }
+
+  if (message.length <= TELEGRAM_MESSAGE_LIMIT) {
+    return message;
+  }
+
+  return `${message.slice(0, TELEGRAM_MESSAGE_LIMIT - 1)}…`;
+}
 
 function initMessenger(botInstance) {
   telegramBotInstance = botInstance;
@@ -19,11 +32,13 @@ function isAdmin(telegramId) {
 }
 
 /**
- * Sends a message conditionally based on environment and testing user ID.
+ * Sends a message conditionally based on environment.
  * @param {string} telegramId - The Telegram ID of the user.
  * @param {string} message - The message content to send.
  */
 async function safeSendMessage(telegramId, message, options) {
+  const messageToSend = trimMessageToTelegramLimit(message);
+
   if (config.ENVIRONMENT === 'PROD') {
     // In production, send message to all users
     try {
@@ -31,7 +46,7 @@ async function safeSendMessage(telegramId, message, options) {
         logError('Messenger not initialized with bot instance.');
         return;
       }
-      await telegramBotInstance.sendMessage(telegramId, message, options);
+      await telegramBotInstance.sendMessage(telegramId, messageToSend, options);
     } catch (error) {
       // Re-throw 403 errors so they can be handled by the caller (user blocked the bot)
       if (error.response && error.response.statusCode === 403) {
@@ -40,23 +55,23 @@ async function safeSendMessage(telegramId, message, options) {
       logError(`Error sending message to user ${telegramId} in PROD environment:`, error.message);
     }
   } else if (config.ENVIRONMENT === 'TEST') {
-    // In test, only send message to the testing user
-    if (telegramId == config.TESTING_CHAT_ID) {
+    // In test, only send message to the admin chat.
+    if (telegramId == config.ADMIN_CHAT_ID) {
       try {
         if (!telegramBotInstance) {
           logError('Messenger not initialized with bot instance.');
           return;
         }
-        await telegramBotInstance.sendMessage(telegramId, message, options);
+        await telegramBotInstance.sendMessage(telegramId, messageToSend, options);
       } catch (error) {
         // Re-throw 403 errors so they can be handled by the caller (user blocked the bot)
         if (error.response && error.response.statusCode === 403) {
           throw error;
         }
-        logError(`Error sending message to testing user ${telegramId} in TEST environment:`, error.message);
+        logError(`Error sending message to admin user ${telegramId} in TEST environment:`, error.message);
       }
     } else {
-      logInfo(`Message suppressed for non-testing user ${telegramId} in TEST environment.`);
+      logInfo(`Message suppressed for non-admin user ${telegramId} in TEST environment.`);
     }
   } else {
     logError(`Unknown ENVIRONMENT: ${config.ENVIRONMENT}. Message not sent to ${telegramId}.`);

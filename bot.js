@@ -8,7 +8,7 @@ const botConfig = require('./config');
 const User = require('./models/User');
 const { connectDB } = require('./utils/database');
 const { safeSendMessage, initMessenger, broadcastToUsers, isAdmin } = require('./utils/messenger'); // Import broadcastToUsers and isAdmin
-//const quickTips = 'Use /settimezone to choose your timezone and /settime HH:MM to set notification time. For now you have to type the full command for time. For example "/settime 08:30". I know this sucks :).  \n\nSend /unregister if you don\'t want to receive messages anymore.';
+//const quickTips = 'Use /settimezone to choose your timezone and /settime HH:MM to set notification time. For now you have to type the full command for time. For example "/settime 08:30". I know this sucks :).  \n\nSend /unregister if you don't want to receive messages anymore.';
 const quickTips = 'Используй команду /settimezone для выбора часового пояса уведомления. Команда /settime поможет настроить время уведомлений.\n\nКоманда /unregister отключит уведомления и бот про тебя забудет.';
 const TEST_ENV = 'TEST';
 
@@ -495,6 +495,28 @@ function startProcessHeartbeat() {
   setInterval(tick, PROCESS_HEARTBEAT_INTERVAL_MS);
 }
 
+function isForcedTestWinner(user) {
+  return botConfig.ENVIRONMENT === TEST_ENV && isAdmin(user.telegramId);
+}
+
+function shouldProcessUserAtCurrentTick(user, now) {
+  if (isForcedTestWinner(user)) {
+    return true;
+  }
+
+  const [targetHour, targetMinute] = user.notificationTime.split(':');
+  return now.hours() === parseInt(targetHour, 10) && now.minutes() === parseInt(targetMinute, 10);
+}
+
+function hasWonCoffee(user) {
+  if (isForcedTestWinner(user)) {
+    logInfo(`User ${user.username || user.telegramId} forced to win coffee in TEST environment.`);
+    return true;
+  }
+
+  return Math.random() < 0.5;
+}
+
 // Cron job to check every minute on working days
 // todo: improve scalability
 function setCronTask() {
@@ -508,13 +530,12 @@ function setCronTask() {
 
       for (const user of users) {
         const now = moment().tz(user.timeZone);
-        const [targetHour, targetMinute] = user.notificationTime.split(':');
         
 	if (botConfig.ENVIRONMENT === TEST_ENV)
 	  logInfo(`User: ${user.username || 'N/A'}, TimeZone: ${user.timeZone}, NotificationTime: ${user.notificationTime}, Now TimeZone: ${now.tz()}, Now Hour: ${now.hours()}, Now Minute: ${now.minutes()}`);
 
-        if (now.hours() === parseInt(targetHour) && now.minutes() === parseInt(targetMinute)) {
-          const hasWon = Math.random() < 0.5;
+        if (shouldProcessUserAtCurrentTick(user, now)) {
+          const hasWon = hasWonCoffee(user);
           logInfo(`User ${user.username} rolled: ${hasWon}`);
 
           if (hasWon) {

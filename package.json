@@ -3,7 +3,6 @@
     "version": "1.0.0",
     "main": "bot.js",
     "dependencies": {
-        "@google/generative-ai": "^0.24.1",
         "dotenv": "^16.0.3",
         "moment-timezone": "^0.5.40",
         "mongoose": "^6.9.0",
